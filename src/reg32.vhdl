@@ -9,9 +9,6 @@ use ieee.std_logic_unsigned.all;
 -- Implementation of a 32b register
 
 entity reg32 is
-	generic(
-		value : std_logic_vector(31 downto 0)
-	);
 	port(
 		in_clk : in std_logic;
 		in_D : in std_logic_vector(31 downto 0);
@@ -22,7 +19,7 @@ entity reg32 is
 end entity reg32;
 
 architecture RTL of reg32 is
-	signal out_val_internal : std_logic_vector(31 downto 0) := value;
+	signal out_val_internal : std_logic_vector(31 downto 0) := "00000000000000000000000000000000";
 begin
 	process(in_clk)
 	begin

@@ -1,4 +1,4 @@
--- Author: Pablo Orduna Lagarma (end222)
+-- Author: Pablo Orduna Lagarma
 -- Risc V
 
 library ieee;
