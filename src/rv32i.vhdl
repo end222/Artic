@@ -1,4 +1,4 @@
--- Author: Pablo Orduna Lagar,a
+-- Author: Pablo Orduna Lagarma
 -- Risc V
 
 library ieee;
@@ -67,6 +67,33 @@ architecture Behavioral of RV32I is
 		       decode_next_pc : out std_logic_vector (31 downto 0));
 	end component;
 
+	signal decode_rs1_id, decode_rs2_id, decode_rd_id : std_logic_vector(4 downto 0);
+	signal func3 : std_logic_vector(2 downto 0);
+	signal func7, opcode : std_logic_vector(6 downto 0);
+	component decoder is
+		Port ( in_inst : in  std_logic_vector (31 downto 0);
+		       out_rs1 : out  std_logic_vector (4 downto 0);
+		       out_rs2 : out  std_logic_vector (4 downto 0);
+		       out_rd : out  std_logic_vector (4 downto 0);
+		       out_func3 : out  std_logic_vector (2 downto 0);
+		       out_func7 : out  std_logic_vector (6 downto 0);
+		       out_opcode : out  std_logic_vector (6 downto 0));
+	end component;
+
+	signal decode_rs1_value, decode_rs2_value : std_logic_vector(31 downto 0);
+	component r32b is
+		Port ( in_clk : in std_logic;
+		       in_reset : in std_logic;
+		       in_rs1_addr : in std_logic_vector (4 downto 0);
+		       in_rs2_addr : in std_logic_vector (4 downto 0);
+		       in_write_addr : in std_logic_vector (4 downto 0);
+		       in_write_value : in std_logic_vector (31 downto 0);
+		       in_WE : in std_logic;						
+		       out_rs1 : out std_logic_vector (31 downto 0);
+		       out_rs2 : out std_logic_vector (31 downto 0));
+	end component;
+
+
 begin
 	-- 32b register that contains the PC
 	pc : reg32 port map ( in_D => PC_in,
@@ -101,4 +128,21 @@ begin
 					 decode_inst => decode_inst_fd,
 					 decode_next_pc => decode_next_pc_fd);
 
+	deco : decoder port map ( in_inst => inst_out,
+				  out_rs1 => decode_rs1_id,
+				  out_rs2 => decode_rs2_id,
+				  out_rd => decode_rd_id,
+				  out_func3 => func3,
+				  out_func7 => func7,
+				  out_opcode => opcode);
+
+	registerb : r32b port map ( in_clk => clk,
+				in_reset => in_reset,
+				in_rs1_addr => decode_rs1_id,
+				in_rs2_addr => decode_rs2_id,
+				in_write_addr => "00000", -- Needed for writeback
+				in_write_value => X"00000000",
+				in_WE => '0',
+				out_rs1 => decode_rs1_value,
+				out_rs2 => decode_rs2_value);
 end Behavioral;
