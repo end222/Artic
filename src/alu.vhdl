@@ -18,24 +18,16 @@ entity ALU is
 	   in_A : in  std_logic_vector (31 downto 0);
            in_B : in  std_logic_vector (31 downto 0);
            op_ctrl : in  std_logic_vector (1 downto 0);
-           out_value : out  std_logic_vector (31 downto 0));
+	   out_value : out  std_logic_vector (31 downto 0));
 end ALU;
 
-architecture RTL of ALU is
+architecture Behavioral of ALU is
 	signal out_value_internal : std_logic_vector (31 downto 0);
 begin
-	process(in_clk)
-	begin
-		if(falling_edge(in_clk)) then
-			case op_ctrl(1 downto 0) is
-				when "00" => out_value_internal <= in_A + in_B;
-				when "01" => out_value_internal <= in_A - in_B;
-				when "10" => out_value_internal <= in_A AND in_B;
-				when "11" => out_value_internal <= in_A OR in_B;
-				when others =>
-					out_value_internal <= "00000000000000000000000000000000";
-			end case;
-		end if;
-	end process;
-out_value <= out_value_internal;
-end RTL;
+	out_value_internal <= 	in_A + in_B when (op_ctrl="000") 
+			else in_A - in_B when (op_ctrl="001") 
+			else in_A AND in_B when (op_ctrl="010")
+			else in_A OR in_B when (op_ctrl="011")
+			else X"00000000";
+	out_value <= out_value_internal;
+end Behavioral;

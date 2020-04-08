@@ -93,6 +93,44 @@ architecture Behavioral of RV32I is
 		       out_rs2 : out std_logic_vector (31 downto 0));
 	end component;
 
+	signal exec_rs1_value, exec_rs2_value, exec_rd_value, exec_inm : std_logic_vector(31 downto 0);
+	signal exec_rs1_id, exec_rs2_id, exec_rd_id : std_logic_vector(4 downto 0);
+	signal exec_rst_inuse, exec_fp_add, exec_memwrite, exec_memread, exec_memtoreg, exec_alu_src : std_logic;
+	signal exec_alu_opctrl : std_logic_vector(1 downto 0);
+	
+	component decode_exec is
+		Port ( in_clk : in std_logic;
+		       in_reset : in std_logic;
+		       in_load : in std_logic;
+
+		       decode_rs1_value : in std_logic_vector(31 downto 0);
+		       decode_rs2_value : in std_logic_vector(31 downto 0);
+		       decode_rs1_id : in std_logic_vector(4 downto 0);
+		       decode_rs2_id : in std_logic_vector(4 downto 0);
+		       decode_rd_id : in std_logic_vector(4 downto 0);
+		       decode_inm : in std_logic_vector(31 downto 0);
+		       decode_rst_inuse : in std_logic;
+		       decode_fp_add : in std_logic;
+		       decode_alu_opctrl : in std_logic_vector(1 downto 0);
+		       decode_memwrite : in std_logic;
+		       decode_memread : in std_logic;
+		       decode_memtoreg : in std_logic;
+		       decode_alu_src : in std_logic;
+
+		       exec_rs1_value : out std_logic_vector(31 downto 0);
+		       exec_rs2_value : out std_logic_vector(31 downto 0);
+		       exec_rs1_id : out std_logic_vector(4 downto 0);
+		       exec_rs2_id : out std_logic_vector(4 downto 0);
+		       exec_rd_id : out std_logic_vector(4 downto 0);
+		       exec_inm : out std_logic_vector(31 downto 0);
+		       exec_rst_inuse : out std_logic;
+		       exec_fp_add : out std_logic;
+		       exec_alu_opctrl : out std_logic_vector(1 downto 0);
+		       exec_memwrite : out std_logic;
+		       exec_memread : out std_logic;
+		       exec_memtoreg : out std_logic;
+		       exec_alu_src : out std_logic);
+	end component;
 
 begin
 	-- 32b register that contains the PC
@@ -145,4 +183,36 @@ begin
 				in_WE => '0',
 				out_rs1 => decode_rs1_value,
 				out_rs2 => decode_rs2_value);
+	de_reg : decode_exec port map ( in_clk => clk,
+		       in_reset => in_reset,
+		       in_load => '1',
+
+		       decode_rs1_value => decode_rs1_value,
+		       decode_rs2_value => decode_rs2_value,
+		       decode_rs1_id => decode_rs1_id,
+		       decode_rs2_id => decode_rs2_id,
+		       decode_rd_id => decode_rd_id,
+		       decode_inm => X"00000000",
+		       decode_rst_inuse => '0',
+		       decode_fp_add => '0',
+		       decode_alu_opctrl => "00",
+		       decode_memwrite => '0',
+		       decode_memread => '0',
+		       decode_memtoreg => '0',
+		       decode_alu_src => '0',
+
+		       exec_rs1_value => exec_rs1_value,
+		       exec_rs2_value => exec_rs2_value,
+		       exec_rs1_id => exec_rs1_id,
+		       exec_rs2_id => exec_rs2_id,
+		       exec_rd_id => exec_rd_id,
+		       exec_inm => exec_inm,
+		       exec_rst_inuse => exec_rst_inuse,
+		       exec_fp_add => exec_fp_add,
+		       exec_alu_opctrl => exec_alu_opctrl,
+		       exec_memwrite => exec_memwrite,
+		       exec_memread => exec_memread,
+		       exec_memtoreg => exec_memtoreg,
+		       exec_alu_src => exec_alu_src);
+
 end Behavioral;

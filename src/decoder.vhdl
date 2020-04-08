@@ -18,7 +18,7 @@ entity decoder is
 	       -- in mind that there are several imm codifications.
 	       -- out_imm : out  std_logic_vector (31 downto 0);
 	       out_opcode : out  std_logic_vector (6 downto 0));
-end ALU;
+end decoder;
 
 architecture RTL of decoder is
 begin

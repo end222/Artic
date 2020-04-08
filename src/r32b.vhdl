@@ -34,17 +34,21 @@ begin
 				end if;
 			end if;
 		end if;
+		
+        -- R0 is always 0 in RISCV
+        if in_rs1_addr = "00000" then
+           
+            out_rs1 <= X"00000000";
+            else
+             out_rs1 <= reg_file(conv_integer(in_rs1_addr));
+        
+        end if;
+        if in_rs1_addr = "00000" then
+           
+            out_rs2 <= X"00000000";
+            else
+             out_rs2 <= reg_file(conv_integer(in_rs1_addr));
+        
+        end if;
 	end process;
-
-	-- R0 is always 0 in RISCV
-	if out_rs1 != 0 then
-		out_rs1 <= reg_file(conv_integer(in_rs1_addr));
-	else
-		out_rs1 <= X"00000000";
-	end if;
-	if out_rs2 != 0 then
-		out_rs2 <= reg_file(conv_integer(in_rs2_addr));
-	else
-		out_rs2 <= X"00000000";
-	end if;
 end Behavioral;
