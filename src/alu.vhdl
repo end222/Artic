@@ -15,10 +15,10 @@ use ieee.std_logic_unsigned.all;
 
 entity ALU is
     Port ( in_clk : in std_logic;
-	   in_A : in  std_logic_vector (31 downto 0);
-           in_B : in  std_logic_vector (31 downto 0);
-           op_ctrl : in  std_logic_vector (1 downto 0);
-	   out_value : out  std_logic_vector (31 downto 0));
+	   in_A : in std_logic_vector (31 downto 0);
+           in_B : in std_logic_vector (31 downto 0);
+           op_ctrl : in std_logic_vector (1 downto 0);
+	   out_value : out std_logic_vector (31 downto 0));
 end ALU;
 
 architecture Behavioral of ALU is
