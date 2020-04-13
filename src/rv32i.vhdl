@@ -12,14 +12,6 @@ entity RV32I is
 end RV32I;
 
 architecture Behavioral of RV32I is
-	component ALU is
-		Port ( in_clk : in std_logic;
-		       in_A : in  std_logic_vector (31 downto 0);
-		       in_B : in  std_logic_vector (31 downto 0);
-		       op_ctrl : in  std_logic_vector (1 downto 0);
-		       out_value : out  std_logic_vector (31 downto 0));
-	end component;
-
 	component mux_2_32 is
 		Port ( in_0 : in std_logic_vector (31 downto 0);
 		       in_1 : in std_logic_vector(31 downto 0);
@@ -143,7 +135,7 @@ architecture Behavioral of RV32I is
 
 	signal memory_rs1_value, memory_rs2_value : std_logic_vector(31 downto 0);
 	signal memory_rd_id : std_logic_vector(4 downto 0);
-	signal memory_rst_inuse, memory_rst_inuse, memory_memwrite, memory_memread, memory_memtoreg : std_logic;
+	signal memory_rst_inuse, memory_memwrite, memory_memread, memory_memtoreg : std_logic;
 	component exec_memory is
 		Port ( in_clk : in std_logic;
 		       in_reset : in std_logic;
