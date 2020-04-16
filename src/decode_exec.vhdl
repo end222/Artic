@@ -15,30 +15,34 @@ entity decode_exec is
 	       decode_rs1_id : in std_logic_vector(4 downto 0);
 	       decode_rs2_id : in std_logic_vector(4 downto 0);
 	       decode_rd_id : in std_logic_vector(4 downto 0);
-	       decode_inm : in std_logic_vector(31 downto 0);
+	       decode_imm : in std_logic_vector(31 downto 0);
 	       decode_rst_inuse : in std_logic; -- Use of RD for risk detection
 	       decode_fp_add : in std_logic;
-	       decode_alu_opctrl : in std_logic_vector(1 downto 0);
+	       decode_alu_opctrl : in std_logic_vector(2 downto 0);
 	       decode_memwrite : in std_logic;
 	       decode_memread : in std_logic;
 		-- Determines whether to use ALU output or MEM output to write to the RD reg
 	       decode_memtoreg : in std_logic;
-		-- Determines whether to use inm or RT value 
+	       -- Determines whether to use inm or RT value 
 	       decode_alu_src : in std_logic;
+	       decode_opcode : in std_logic_vector(6 downto 0);
+	       decode_func7 : in std_logic_vector(6 downto 0);
 
 	       exec_rs1_value : out std_logic_vector(31 downto 0);
 	       exec_rs2_value : out std_logic_vector(31 downto 0);
 	       exec_rs1_id : out std_logic_vector(4 downto 0);
 	       exec_rs2_id : out std_logic_vector(4 downto 0);
 	       exec_rd_id : out std_logic_vector(4 downto 0);
-	       exec_inm : out std_logic_vector(31 downto 0);
+	       exec_imm : out std_logic_vector(31 downto 0);
 	       exec_rst_inuse : out std_logic;
 	       exec_fp_add : out std_logic;
-	       exec_alu_opctrl : out std_logic_vector(1 downto 0);
+	       exec_alu_opctrl : out std_logic_vector(2 downto 0);
 	       exec_memwrite : out std_logic;
 	       exec_memread : out std_logic;
 	       exec_memtoreg : out std_logic;
-	       exec_alu_src : out std_logic
+	       exec_alu_src : out std_logic;
+	       exec_opcode : out std_logic_vector(6 downto 0);
+	       exec_func7 : out std_logic_vector(6 downto 0)
        );
 end decode_exec;
 
@@ -54,14 +58,16 @@ begin
 				exec_rs1_id <= "00000";
 				exec_rs2_id <= "00000";
 				exec_rd_id <= "00000";
-				exec_inm <= "00000000000000000000000000000000";
+				exec_imm <= "00000000000000000000000000000000";
 				exec_rst_inuse <= '0';
 				exec_fp_add <= '0';
-				exec_alu_opctrl <= "00";
+				exec_alu_opctrl <= "000";
 				exec_memwrite <= '0';
 				exec_memread <= '0';
 				exec_memtoreg <= '0';
 				exec_alu_src <= '0';
+				exec_opcode <= "0000000";
+				exec_func7 <= "0000000";
 
 			else
 				if (in_load = '1') then
@@ -70,7 +76,7 @@ begin
 					exec_rs1_id <= decode_rs1_id;
 					exec_rs2_id <= decode_rs2_id;
 					exec_rd_id <= decode_rd_id;
-					exec_inm <= decode_inm;
+					exec_imm <= decode_imm;
 					exec_rst_inuse <= decode_rst_inuse;
 					exec_fp_add <= decode_fp_add;
 					exec_alu_opctrl <= decode_alu_opctrl;
@@ -78,6 +84,8 @@ begin
 					exec_memread <= decode_memread;
 					exec_memtoreg <= decode_memtoreg;
 					exec_alu_src <= decode_alu_src;
+					exec_opcode <= decode_opcode;
+					exec_func7 <= decode_func7;
 				end if;
 			end if;
 		end if;

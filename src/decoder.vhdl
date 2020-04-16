@@ -14,13 +14,12 @@ entity decoder is
 	       out_rd : out  std_logic_vector (4 downto 0);
 	       out_func3 : out  std_logic_vector (2 downto 0);
 	       out_func7 : out  std_logic_vector (6 downto 0);
-	       -- TODO: uncomment to implement imm. It should be kept
-	       -- in mind that there are several imm codifications.
-	       -- out_imm : out  std_logic_vector (31 downto 0);
+	       out_imm : out std_logic_vector(31 downto 0);
 	       out_opcode : out  std_logic_vector (6 downto 0));
 end decoder;
 
 architecture RTL of decoder is
+	signal expanded_imm_internal : std_logic_vector (31 downto 0);
 begin
 	out_opcode <= in_inst(6 downto 0);
 	out_rs1 <= in_inst(19 downto 15);
@@ -28,4 +27,9 @@ begin
 	out_rd <= in_inst(11 downto 7);
 	out_func3 <= in_inst(14 downto 12);
 	out_func7 <= in_inst(31 downto 25);
+
+	-- TODO: Take into account more cases
+	expanded_imm_internal(11 downto 0) <= in_inst(31 downto 20);
+	expanded_imm_internal(31 downto 12) <= "00000000000000000000" when in_inst(31)='0' else "11111111111111111111";
+	out_imm <= expanded_imm_internal;
 end RTL;
