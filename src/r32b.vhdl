@@ -19,7 +19,11 @@ end r32b;
 
 architecture Behavioral of r32b is
 	type reg_array is array (0 to 31) of std_logic_vector(31 downto 0);
-	signal reg_file : reg_array;
+	signal reg_file : reg_array := (X"00000000", X"00000000", X"00000000", X"00000000",
+	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",
+	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",
+	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",
+	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000");
 begin 
 	process(in_clk)
 	begin 
@@ -32,23 +36,23 @@ begin
 				if in_WE = '1' then
 					reg_file(conv_integer(in_write_addr)) <= in_write_value;
 				end if;
+
+				-- R0 is always 0 in RISCV
+				if in_rs1_addr = "00000" then
+
+					out_rs1 <= X"00000000";
+				else
+					out_rs1 <= reg_file(conv_integer(in_rs1_addr));
+
+				end if;
+				if in_rs2_addr = "00000" then
+
+					out_rs2 <= X"00000000";
+				else
+					out_rs2 <= reg_file(conv_integer(in_rs2_addr));
+
+				end if;
 			end if;
 		end if;
-		
-        -- R0 is always 0 in RISCV
-        if in_rs1_addr = "00000" then
-           
-            out_rs1 <= X"00000000";
-            else
-             out_rs1 <= reg_file(conv_integer(in_rs1_addr));
-        
-        end if;
-        if in_rs1_addr = "00000" then
-           
-            out_rs2 <= X"00000000";
-            else
-             out_rs2 <= reg_file(conv_integer(in_rs1_addr));
-        
-        end if;
 	end process;
 end Behavioral;

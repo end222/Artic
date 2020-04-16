@@ -21,12 +21,13 @@ entity decode_exec is
 	       decode_alu_opctrl : in std_logic_vector(2 downto 0);
 	       decode_memwrite : in std_logic;
 	       decode_memread : in std_logic;
-		-- Determines whether to use ALU output or MEM output to write to the RD reg
+	       -- Determines whether to use ALU output or MEM output to write to the RD reg
 	       decode_memtoreg : in std_logic;
 	       -- Determines whether to use inm or RT value 
 	       decode_alu_src : in std_logic;
 	       decode_opcode : in std_logic_vector(6 downto 0);
 	       decode_func7 : in std_logic_vector(6 downto 0);
+	       decode_breg_WE : in std_logic;
 
 	       exec_rs1_value : out std_logic_vector(31 downto 0);
 	       exec_rs2_value : out std_logic_vector(31 downto 0);
@@ -42,8 +43,8 @@ entity decode_exec is
 	       exec_memtoreg : out std_logic;
 	       exec_alu_src : out std_logic;
 	       exec_opcode : out std_logic_vector(6 downto 0);
-	       exec_func7 : out std_logic_vector(6 downto 0)
-       );
+	       exec_func7 : out std_logic_vector(6 downto 0);
+	       exec_breg_WE : out std_logic);
 end decode_exec;
 
 
@@ -68,6 +69,7 @@ begin
 				exec_alu_src <= '0';
 				exec_opcode <= "0000000";
 				exec_func7 <= "0000000";
+				exec_breg_WE <= '0';
 
 			else
 				if (in_load = '1') then
@@ -86,6 +88,7 @@ begin
 					exec_alu_src <= decode_alu_src;
 					exec_opcode <= decode_opcode;
 					exec_func7 <= decode_func7;
+					exec_breg_WE <= decode_breg_WE;
 				end if;
 			end if;
 		end if;
