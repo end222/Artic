@@ -62,7 +62,7 @@ architecture Behavioral of RV32I is
 	signal func3 : std_logic_vector(2 downto 0);
 	signal func7, opcode : std_logic_vector(6 downto 0);
 	signal imm : std_logic_vector(31 downto 0);
-	signal breg_WE : std_logic; -- Write enable for bank register
+	signal breg_WE, memread, memwrite : std_logic; -- Write enable for bank register
 
 	-- Splits the instruction and tells which components will need to be activated
 	component decoder is
@@ -74,6 +74,8 @@ architecture Behavioral of RV32I is
 		       out_func7 : out  std_logic_vector (6 downto 0);
 		       out_imm : out std_logic_vector(31 downto 0);
 		       out_opcode : out  std_logic_vector (6 downto 0);
+		       out_memread : out std_logic;
+		       out_memwrite : out std_logic;
 		       out_breg_WE : out std_logic);
 	end component;
 
@@ -251,6 +253,8 @@ begin
 				  out_func7 => func7,
 				  out_imm => imm,
 				  out_breg_WE => breg_WE,
+				  out_memread => memread,
+				  out_memwrite => memwrite,
 				  out_opcode => opcode);
 
 	registerb : r32b port map ( in_clk => clk,
@@ -276,8 +280,8 @@ begin
 		       decode_rst_inuse => '0',
 		       decode_fp_add => '0',
 		       decode_alu_opctrl => func3,
-		       decode_memwrite => '0',
-		       decode_memread => '0',
+		       decode_memwrite => memwrite,
+		       decode_memread => memread,
 		       decode_memtoreg => '0',
 		       decode_alu_src => '0',
 		       decode_opcode => opcode,
