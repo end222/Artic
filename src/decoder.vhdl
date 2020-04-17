@@ -39,6 +39,7 @@ begin
 	out_imm <= expanded_imm_internal;
 
 	out_breg_WE <= '1' when in_inst(6 downto 0)="0010011" or in_inst(6 downto 0)="0110011" -- ALU operations (0110011) and ALU with imm (0010011)
+		       else '1' when in_inst(6 downto 0)="0000011" -- LD instructions
 		       else '0';
 	out_memtoreg <= '1' when in_inst(6 downto 0)="0000011" -- LD instructions (0000011)
 			else '0';

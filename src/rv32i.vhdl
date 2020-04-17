@@ -62,7 +62,7 @@ architecture Behavioral of RV32I is
 	signal func3 : std_logic_vector(2 downto 0);
 	signal func7, opcode : std_logic_vector(6 downto 0);
 	signal imm : std_logic_vector(31 downto 0);
-	signal breg_WE, memread, memwrite : std_logic; -- Write enable for bank register
+	signal breg_WE, memread, memwrite, memtoreg : std_logic; -- Write enable for bank register
 
 	-- Splits the instruction and tells which components will need to be activated
 	component decoder is
@@ -75,6 +75,7 @@ architecture Behavioral of RV32I is
 		       out_imm : out std_logic_vector(31 downto 0);
 		       out_opcode : out  std_logic_vector (6 downto 0);
 		       out_memread : out std_logic;
+		       out_memtoreg : out std_logic;
 		       out_memwrite : out std_logic;
 		       out_breg_WE : out std_logic);
 	end component;
@@ -189,7 +190,7 @@ architecture Behavioral of RV32I is
 		       out_val : out std_logic_vector(31 downto 0));
 	end component;
 
-	signal writeback_alu_out_value, writeback_mem_out_value : std_logic_vector(31 downto 0);
+	signal writeback_out_value : std_logic_vector(31 downto 0);
 	signal writeback_rd_id : std_logic_vector(4 downto 0);
 	signal writeback_rst_inuse, writeback_memtoreg, writeback_breg_WE : std_logic;
 	component memory_writeback is
@@ -203,12 +204,21 @@ architecture Behavioral of RV32I is
 		       memory_memtoreg : in std_logic;
 		       memory_breg_WE : in std_logic;
 
-		       writeback_alu_out_value : out std_logic_vector(31 downto 0);
-		       writeback_mem_out_value : out std_logic_vector(31 downto 0);
+		       writeback_out_value : out std_logic_vector(31 downto 0);
 		       writeback_rd_id : out std_logic_vector(4 downto 0);
 		       writeback_rst_inuse : out std_logic;
 		       writeback_memtoreg : out std_logic;
 		       writeback_breg_WE : out std_logic);
+	end component;
+
+	signal mux4_out_1, mux4_out_2 : std_logic_vector(31 downto 0);
+	component mux_4_32 is
+		Port ( in_0 : in  STD_LOGIC_VECTOR (31 downto 0);
+		       in_1 : in  STD_LOGIC_VECTOR (31 downto 0);
+		       in_2 : in  STD_LOGIC_VECTOR (31 downto 0);
+		       in_3 : in  STD_LOGIC_VECTOR (31 downto 0);
+		       in_ctrl : in  std_logic_vector(1 downto 0);
+		       out_value : out  STD_LOGIC_VECTOR (31 downto 0));
 	end component;
 
 begin
@@ -255,6 +265,7 @@ begin
 				  out_breg_WE => breg_WE,
 				  out_memread => memread,
 				  out_memwrite => memwrite,
+				  out_memtoreg => memtoreg,
 				  out_opcode => opcode);
 
 	registerb : r32b port map ( in_clk => clk,
@@ -262,7 +273,7 @@ begin
 				in_rs1_addr => decode_rs1_id,
 				in_rs2_addr => decode_rs2_id,
 				in_write_addr => writeback_rd_id,
-				in_write_value => writeback_alu_out_value,
+				in_write_value => writeback_out_value,
 				in_WE => writeback_breg_WE,
 				out_rs1 => decode_rs1_value,
 				out_rs2 => decode_rs2_value);
@@ -282,7 +293,7 @@ begin
 		       decode_alu_opctrl => func3,
 		       decode_memwrite => memwrite,
 		       decode_memread => memread,
-		       decode_memtoreg => '0',
+		       decode_memtoreg => memtoreg,
 		       decode_alu_src => '0',
 		       decode_opcode => opcode,
 		       decode_func7 => func7,
@@ -306,8 +317,8 @@ begin
 		       exec_breg_WE => exec_breg_WE);
 
 	alu_int : ALU port map ( in_clk => clk,
-				 in_A => exec_rs1_value,
-				 in_B => exec_rs2_value,
+				 in_A => mux4_out_1,
+				 in_B => mux4_out_2,
 				 in_imm => exec_imm,
 				 in_func7 => exec_func7,
 				 op_ctrl => exec_alu_opctrl,
@@ -337,8 +348,8 @@ begin
 				       memory_breg_WE => memory_breg_WE);
 
 	data_mem : data_memory port map ( in_clk => clk,
-					in_addr => X"00000000",
-					in_D => X"00000000",
+					in_addr => memory_alu_out_value,
+					in_D => memory_rs2_value,
 					in_WE => memory_memwrite,
 					in_RE => memory_memread,
 					out_val => memory_mem_out_value);
@@ -352,11 +363,23 @@ begin
 		       memory_rst_inuse => memory_rst_inuse,
 		       memory_memtoreg => memory_memtoreg,
 		       memory_breg_WE => memory_breg_WE,
-		       writeback_alu_out_value => writeback_alu_out_value,
-		       writeback_mem_out_value => writeback_mem_out_value,
+		       writeback_out_value => writeback_out_value,
 		       writeback_rd_id => writeback_rd_id,
 		       writeback_rst_inuse => writeback_rst_inuse,
 		       writeback_memtoreg => writeback_memtoreg,
 		       writeback_breg_WE => writeback_breg_WE);
 
+	mux4_1 : mux_4_32 port map ( in_0 => exec_rs1_value,
+		       in_1 => X"00000000",
+		       in_2 => X"00000000",
+		       in_3 => X"00000000",
+		       in_ctrl => "00",
+		       out_value => mux4_out_1);
+
+	mux4_2 : mux_4_32 port map ( in_0 => exec_rs2_value,
+		       in_1 => X"00000000",
+		       in_2 => X"00000000",
+		       in_3 => X"00000000",
+		       in_ctrl => "00",
+		       out_value => mux4_out_2);
 end Behavioral;

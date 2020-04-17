@@ -4,6 +4,8 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
 
 entity memory_writeback is
 	Port ( in_clk : in std_logic;
@@ -18,8 +20,7 @@ entity memory_writeback is
 	       memory_memtoreg : in std_logic;
 	       memory_breg_WE : in std_logic;
 
-	       writeback_alu_out_value : out std_logic_vector(31 downto 0);
-	       writeback_mem_out_value : out std_logic_vector(31 downto 0);
+	       writeback_out_value : out std_logic_vector(31 downto 0);
 	       writeback_rd_id : out std_logic_vector(4 downto 0);
 	       writeback_rst_inuse : out std_logic;
 	       writeback_memtoreg : out std_logic;
@@ -33,15 +34,18 @@ begin
 	begin
 		if(rising_edge(in_clk)) then
 			if (in_reset = '1') then
-				writeback_alu_out_value <= "00000000000000000000000000000000";
+				writeback_out_value <= "00000000000000000000000000000000";
 				writeback_rd_id <= "00000";
 				writeback_rst_inuse <= '0';
 				writeback_memtoreg <= '0';
 				writeback_breg_WE <= '0';
 			else
 				if (in_load = '1') then
-					writeback_alu_out_value <= memory_alu_out_value;
-					writeback_mem_out_value <= memory_mem_out_value;
+					if (memory_memtoreg='1') then
+						writeback_out_value <= memory_mem_out_value;
+					else
+						writeback_out_value <= memory_alu_out_value;
+					end if;
 					writeback_rd_id <= memory_rd_id;
 					writeback_rst_inuse <= memory_rst_inuse;
 					writeback_memtoreg <= memory_memtoreg;
