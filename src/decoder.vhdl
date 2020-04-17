@@ -16,6 +16,8 @@ entity decoder is
 	       out_func7 : out  std_logic_vector (6 downto 0);
 	       out_imm : out std_logic_vector(31 downto 0);
 	       out_opcode : out  std_logic_vector (6 downto 0);
+	       -- Determines which value to store in breg (memory or ALU)
+	       out_memtoreg : out std_logic;
 	       out_breg_WE : out std_logic);
 end decoder;
 
@@ -36,4 +38,6 @@ begin
 
 	out_breg_WE <= '1' when in_inst(6 downto 0)="0010011" or in_inst(6 downto 0)="0110011" -- ALU operations (0110011) and ALU with imm (0010011)
 		       else '0';
+	out_memtoreg <= '1' when in_inst(6 downto 0)="0000011" -- LD operations (0000011)
+			else '0';
 end RTL;
