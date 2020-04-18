@@ -212,6 +212,7 @@ architecture Behavioral of RV32I is
 	end component;
 
 	signal mux4_out_1, mux4_out_2 : std_logic_vector(31 downto 0);
+	signal mux_ctrl_1, mux_ctrl_2 : std_logic_vector(1 downto 0);
 	component mux_4_32 is
 		Port ( in_0 : in  STD_LOGIC_VECTOR (31 downto 0);
 		       in_1 : in  STD_LOGIC_VECTOR (31 downto 0);
@@ -220,6 +221,18 @@ architecture Behavioral of RV32I is
 		       in_ctrl : in  std_logic_vector(1 downto 0);
 		       out_value : out  STD_LOGIC_VECTOR (31 downto 0));
 	end component;
+
+	component anticipation_unit is
+		Port( exec_rs1_id : in  std_logic_vector(4 downto 0);
+		      exec_rs2_id : in  std_logic_vector(4 downto 0);
+		      memory_breg_WE : in std_logic;
+		      memory_rd_id : in  std_logic_vector(4 downto 0);
+		      writeback_breg_WE : in std_logic;
+		      writeback_rd_id : in  std_logic_vector(4 downto 0);
+		      mux_ctrl_1: out std_logic_vector(1 downto 0);
+		      mux_ctrl_2: out std_logic_vector(1 downto 0));
+	end component;
+
 
 begin
 	-- 32b register that contains the PC
@@ -370,16 +383,26 @@ begin
 		       writeback_breg_WE => writeback_breg_WE);
 
 	mux4_1 : mux_4_32 port map ( in_0 => exec_rs1_value,
-		       in_1 => X"00000000",
-		       in_2 => X"00000000",
+		       in_1 => memory_alu_out_value,
+		       in_2 => writeback_out_value,
 		       in_3 => X"00000000",
-		       in_ctrl => "00",
+		       in_ctrl => mux_ctrl_1,
 		       out_value => mux4_out_1);
 
 	mux4_2 : mux_4_32 port map ( in_0 => exec_rs2_value,
-		       in_1 => X"00000000",
-		       in_2 => X"00000000",
+		       in_1 => memory_alu_out_value,
+		       in_2 => writeback_out_value,
 		       in_3 => X"00000000",
-		       in_ctrl => "00",
+		       in_ctrl => mux_ctrl_2,
 		       out_value => mux4_out_2);
+
+	ant_unit : anticipation_unit port map ( exec_rs1_id => exec_rs1_id,
+		      exec_rs2_id => exec_rs2_id,
+		      memory_breg_WE => memory_breg_WE,
+		      memory_rd_id => memory_rd_id,
+		      writeback_breg_WE => writeback_breg_WE,
+		      writeback_rd_id => writeback_rd_id,
+		      mux_ctrl_1 => mux_ctrl_1,
+		      mux_ctrl_2 => mux_ctrl_2);
+
 end Behavioral;
