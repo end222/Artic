@@ -233,6 +233,14 @@ architecture Behavioral of RV32I is
 		      mux_ctrl_2: out std_logic_vector(1 downto 0));
 	end component;
 
+	component risk_detection_unit is
+		Port ( decode_rs1_id : in std_logic_vector(4 downto 0);
+		       decode_rs2_id : in std_logic_vector(4 downto 0);
+		       exec_rd_id : in std_logic_vector(4 downto 0);
+		       exec_memread : in std_logic;
+		       stop_decode : out std_logic;
+	end component;
+
 
 begin
 	-- 32b register that contains the PC
@@ -377,7 +385,7 @@ begin
 		       memory_memtoreg => memory_memtoreg,
 		       memory_breg_WE => memory_breg_WE,
 		       writeback_out_value => writeback_out_value,
-		       writeback_rd_id => writeback_rd_id,
+		       writeback_rd_id = writeback_rd_id,
 		       writeback_rst_inuse => writeback_rst_inuse,
 		       writeback_memtoreg => writeback_memtoreg,
 		       writeback_breg_WE => writeback_breg_WE);
@@ -404,5 +412,11 @@ begin
 		      writeback_rd_id => writeback_rd_id,
 		      mux_ctrl_1 => mux_ctrl_1,
 		      mux_ctrl_2 => mux_ctrl_2);
+
+	rd_unit : risk_detection_unit port map ( decode_rs1_id => decode_rs1_id,
+		       decode_rs2_id => decode_rs2_id,
+		       exec_memread => exec_memread,
+		       exec_rd_id => exec_rd_id,
+		       stop_decode => '0'); -- TODO: connect
 
 end Behavioral;
