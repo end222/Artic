@@ -27,32 +27,19 @@ architecture Behavioral of r32b is
 begin 
 	process(in_clk)
 	begin 
-		if (in_clk'event and in_clk='0') then
+		if (falling_edge(in_clk)) then
 			if in_reset='1' then 	
 				for i in 0 to 31 loop
 					reg_file(i) <= "00000000000000000000000000000000";
 				end loop;
 			else
-				if in_WE = '1' then
+				-- Keeping in mind that R0 is always 0 in RISCV
+				if in_WE = '1' and in_write_addr/="00000" then
 					reg_file(conv_integer(in_write_addr)) <= in_write_value;
-				end if;
-
-				-- R0 is always 0 in RISCV
-				if in_rs1_addr = "00000" then
-
-					out_rs1 <= X"00000000";
-				else
-					out_rs1 <= reg_file(conv_integer(in_rs1_addr));
-
-				end if;
-				if in_rs2_addr = "00000" then
-
-					out_rs2 <= X"00000000";
-				else
-					out_rs2 <= reg_file(conv_integer(in_rs2_addr));
-
 				end if;
 			end if;
 		end if;
 	end process;
+	out_rs1 <= reg_file(conv_integer(in_rs1_addr));
+	out_rs2 <= reg_file(conv_integer(in_rs2_addr));
 end Behavioral;

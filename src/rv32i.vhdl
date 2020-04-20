@@ -233,21 +233,29 @@ architecture Behavioral of RV32I is
 		      mux_ctrl_2: out std_logic_vector(1 downto 0));
 	end component;
 
+	signal stop_decode : std_logic;
 	component risk_detection_unit is
 		Port ( decode_rs1_id : in std_logic_vector(4 downto 0);
 		       decode_rs2_id : in std_logic_vector(4 downto 0);
 		       exec_rd_id : in std_logic_vector(4 downto 0);
 		       exec_memread : in std_logic;
-		       stop_decode : out std_logic;
+		       stop_decode : out std_logic);
 	end component;
 
+	signal load_PC, load_fd, load_de, reset_de : std_logic;
 
 begin
+	-- Load when there is no risk detected
+	load_PC <= not stop_decode;
+	load_fd <= not stop_decode;
+	load_de <= not stop_decode;
+	reset_de <= in_reset or stop_decode;
+
 	-- 32b register that contains the PC
 	pc : reg32 port map ( in_D => PC_in,
 			      in_clk => clk,
 			      in_reset => in_reset,
-			      in_W => '1', -- Always load
+			      in_W => load_PC,
 			      out_val => PC_out);
 
 	-- TODO: implement jump and modify this mux to choose between the new calculated
@@ -270,7 +278,7 @@ begin
 
 	fd_reg : fetch_decode port map ( in_clk => clk,
 					 in_reset => '0',
-					 in_load => '1',
+					 in_load => load_fd,
 					 fetch_inst => inst_out,
 					 fetch_next_pc => adder4_out,
 					 decode_inst => decode_inst_fd,
@@ -300,8 +308,8 @@ begin
 				out_rs2 => decode_rs2_value);
 
 	de_reg : decode_exec port map ( in_clk => clk,
-		       in_reset => in_reset,
-		       in_load => '1',
+		       in_reset => reset_de,
+		       in_load => load_de,
 
 		       decode_rs1_value => decode_rs1_value,
 		       decode_rs2_value => decode_rs2_value,
@@ -385,7 +393,7 @@ begin
 		       memory_memtoreg => memory_memtoreg,
 		       memory_breg_WE => memory_breg_WE,
 		       writeback_out_value => writeback_out_value,
-		       writeback_rd_id = writeback_rd_id,
+		       writeback_rd_id => writeback_rd_id,
 		       writeback_rst_inuse => writeback_rst_inuse,
 		       writeback_memtoreg => writeback_memtoreg,
 		       writeback_breg_WE => writeback_breg_WE);
@@ -417,6 +425,6 @@ begin
 		       decode_rs2_id => decode_rs2_id,
 		       exec_memread => exec_memread,
 		       exec_rd_id => exec_rd_id,
-		       stop_decode => '0'); -- TODO: connect
+		       stop_decode => stop_decode);
 
 end Behavioral;
