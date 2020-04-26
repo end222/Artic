@@ -19,6 +19,8 @@ entity memory_writeback is
 	       -- Determines whether to use ALU output or MEM output to write to the RD reg
 	       memory_memtoreg : in std_logic;
 	       memory_breg_WE : in std_logic;
+	       memory_next_pc : in std_logic_vector(31 downto 0);
+	       memory_opcode : in std_logic_vector(6 downto 0);
 
 	       writeback_out_value : out std_logic_vector(31 downto 0);
 	       writeback_rd_id : out std_logic_vector(4 downto 0);
@@ -43,6 +45,8 @@ begin
 				if (in_load = '1') then
 					if (memory_memtoreg='1') then
 						writeback_out_value <= memory_mem_out_value;
+					elsif (memory_opcode="1101111") then -- JAL instruction
+						writeback_out_value <= memory_next_pc;
 					else
 						writeback_out_value <= memory_alu_out_value;
 					end if;

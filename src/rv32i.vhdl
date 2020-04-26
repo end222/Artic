@@ -47,7 +47,7 @@ architecture Behavioral of RV32I is
 		       out_val : out std_logic_vector(31 downto 0));
 	end component;
 
-	signal decode_inst_fd, decode_next_pc_fd : std_logic_vector(31 downto 0);
+	signal decode_inst_fd, decode_next_pc : std_logic_vector(31 downto 0);
 	component fetch_decode is
 		Port ( in_clk : in std_logic;
 		       in_reset : in std_logic;
@@ -61,7 +61,7 @@ architecture Behavioral of RV32I is
 	signal decode_rs1_id, decode_rs2_id, decode_rd_id : std_logic_vector(4 downto 0);
 	signal func3 : std_logic_vector(2 downto 0);
 	signal func7, opcode : std_logic_vector(6 downto 0);
-	signal imm : std_logic_vector(31 downto 0);
+	signal imm, jmp_address : std_logic_vector(31 downto 0);
 	signal breg_WE, memread, memwrite, memtoreg : std_logic; -- Write enable for bank register
 
 	-- Splits the instruction and tells which components will need to be activated
@@ -98,7 +98,7 @@ architecture Behavioral of RV32I is
 	signal exec_rst_inuse, exec_fp_add, exec_memwrite, exec_memread, exec_memtoreg, exec_alu_src, exec_breg_WE : std_logic;
 	signal exec_alu_opctrl : std_logic_vector(2 downto 0);
 	signal exec_opcode, exec_func7 : std_logic_vector(6 downto 0);
-	signal exec_imm : std_logic_vector(31 downto 0);
+	signal exec_imm, exec_next_pc : std_logic_vector(31 downto 0);
 	
 	component decode_exec is
 		Port ( in_clk : in std_logic;
@@ -121,6 +121,7 @@ architecture Behavioral of RV32I is
 		       decode_opcode : in std_logic_vector(6 downto 0);
 		       decode_func7 : in std_logic_vector(6 downto 0);
 		       decode_breg_WE : in std_logic;
+		       decode_next_pc : in std_logic_vector(31 downto 0);
 
 		       exec_rs1_value : out std_logic_vector(31 downto 0);
 		       exec_rs2_value : out std_logic_vector(31 downto 0);
@@ -137,7 +138,8 @@ architecture Behavioral of RV32I is
 		       exec_alu_src : out std_logic;
 		       exec_opcode : out std_logic_vector(6 downto 0);
 		       exec_func7 : out std_logic_vector(6 downto 0);
-		       exec_breg_WE : out std_logic);
+		       exec_breg_WE : out std_logic;
+		       exec_next_pc : out std_logic_vector(31 downto 0));
 	end component;
 
 	signal exec_alu_out_value : std_logic_vector(31 downto 0);
@@ -152,9 +154,10 @@ architecture Behavioral of RV32I is
 		       out_value : out std_logic_vector(31 downto 0));
 	end component;
 
-	signal memory_rs1_value, memory_rs2_value, memory_alu_out_value : std_logic_vector(31 downto 0);
+	signal memory_rs1_value, memory_rs2_value, memory_alu_out_value, memory_next_pc : std_logic_vector(31 downto 0);
 	signal memory_rd_id : std_logic_vector(4 downto 0);
 	signal memory_rst_inuse, memory_memwrite, memory_memread, memory_memtoreg, memory_breg_WE : std_logic;
+	signal memory_opcode : std_logic_vector(6 downto 0);
 	component exec_memory is
 		Port ( in_clk : in std_logic;
 		       in_reset : in std_logic;
@@ -168,6 +171,8 @@ architecture Behavioral of RV32I is
 		       exec_memread : in std_logic;
 		       exec_memtoreg : in std_logic;
 		       exec_breg_WE : in std_logic;
+		       exec_next_pc : in std_logic_vector(31 downto 0);
+		       exec_opcode : in std_logic_vector(6 downto 0);
 
 		       memory_rs1_value : out std_logic_vector(31 downto 0);
 		       memory_rs2_value : out std_logic_vector(31 downto 0);
@@ -177,6 +182,8 @@ architecture Behavioral of RV32I is
 		       memory_memwrite : out std_logic;
 		       memory_memread : out std_logic;
 		       memory_memtoreg : out std_logic;
+		       memory_next_pc : out std_logic_vector(31 downto 0);
+		       memory_opcode : out std_logic_vector(6 downto 0);
 		       memory_breg_WE : out std_logic);
 	end component;
 
@@ -203,6 +210,8 @@ architecture Behavioral of RV32I is
 		       memory_rst_inuse : in std_logic; 
 		       memory_memtoreg : in std_logic;
 		       memory_breg_WE : in std_logic;
+		       memory_next_pc : in std_logic_vector(31 downto 0);
+		       memory_opcode : in std_logic_vector(6 downto 0);
 
 		       writeback_out_value : out std_logic_vector(31 downto 0);
 		       writeback_rd_id : out std_logic_vector(4 downto 0);
@@ -244,10 +253,16 @@ architecture Behavioral of RV32I is
 
 	signal load_PC, load_fd, load_de, reset_de : std_logic;
 
+	signal jmp_mux_ctrl : std_logic;
+	component jmp_control is
+		Port ( in_opcode : in std_logic_vector (6 downto 0);
+		       out_jmp_mux_ctrl : out std_logic);
+	end component;
+
 begin
 	-- Load when there is no risk detected
 	load_PC <= not stop_decode;
-	load_fd <= not stop_decode;
+	load_fd <= not stop_decode or not jmp_mux_ctrl;
 	load_de <= not stop_decode;
 	reset_de <= in_reset or stop_decode;
 
@@ -258,16 +273,18 @@ begin
 			      in_W => load_PC,
 			      out_val => PC_out);
 
-	-- TODO: implement jump and modify this mux to choose between the new calculated
-	-- direction and the one from the PC adder
 	pc_mux : mux_2_32 port map ( in_0 => adder4_out,
-				     in_1 => "00000000000000000000000000000000",
-				     ctrl => '0',
+				     in_1 => jmp_address,
+				     ctrl => jmp_mux_ctrl,
 				     out_val => PC_in);
 
 	adder4 : adder32 port map ( in_0 => PC_out,
 				    in_1 => "00000000000000000000000000000100",
 				    out_val => adder4_out);
+
+	adder_pc : adder32 port map ( in_0 => decode_next_pc,
+				      in_1 => imm,
+				      out_val => jmp_address);
 
 	inst_mem : inst_memory port map ( in_clk => clk,
 					  in_addr => PC_out,
@@ -277,12 +294,13 @@ begin
 					  out_val => inst_out);
 
 	fd_reg : fetch_decode port map ( in_clk => clk,
-					 in_reset => '0',
+					 -- Reset when a jump occurs so as to avoid executing PC+4
+					 in_reset => jmp_mux_ctrl, 
 					 in_load => load_fd,
 					 fetch_inst => inst_out,
 					 fetch_next_pc => adder4_out,
 					 decode_inst => decode_inst_fd,
-					 decode_next_pc => decode_next_pc_fd);
+					 decode_next_pc => decode_next_pc);
 
 	deco : decoder port map ( in_inst => decode_inst_fd,
 				  out_rs1 => decode_rs1_id,
@@ -327,6 +345,7 @@ begin
 		       decode_opcode => opcode,
 		       decode_func7 => func7,
 		       decode_breg_WE => breg_WE,
+		       decode_next_pc => decode_next_pc,
 
 		       exec_rs1_value => exec_rs1_value,
 		       exec_rs2_value => exec_rs2_value,
@@ -343,7 +362,8 @@ begin
 		       exec_alu_src => exec_alu_src,
 		       exec_opcode => exec_opcode,
 		       exec_func7 => exec_func7,
-		       exec_breg_WE => exec_breg_WE);
+		       exec_breg_WE => exec_breg_WE,
+		       exec_next_pc => exec_next_pc);
 
 	alu_int : ALU port map ( in_clk => clk,
 				 in_A => mux4_out_1,
@@ -366,6 +386,8 @@ begin
 				       exec_memread => exec_memread,
 				       exec_memtoreg => exec_memtoreg,
 				       exec_breg_WE => exec_breg_WE,
+				       exec_next_pc => exec_next_pc,
+				       exec_opcode => exec_opcode,
 				       memory_rs1_value => memory_rs1_value,
 				       memory_rs2_value => memory_rs2_value,
 				       memory_alu_out_value => memory_alu_out_value,
@@ -374,6 +396,8 @@ begin
 				       memory_memwrite => memory_memwrite,
 				       memory_memread => memory_memread,
 				       memory_memtoreg => memory_memtoreg,
+				       memory_next_pc => memory_next_pc,
+				       memory_opcode => memory_opcode,
 				       memory_breg_WE => memory_breg_WE);
 
 	data_mem : data_memory port map ( in_clk => clk,
@@ -392,6 +416,8 @@ begin
 		       memory_rst_inuse => memory_rst_inuse,
 		       memory_memtoreg => memory_memtoreg,
 		       memory_breg_WE => memory_breg_WE,
+		       memory_next_pc => memory_next_pc,
+		       memory_opcode => memory_opcode,
 		       writeback_out_value => writeback_out_value,
 		       writeback_rd_id => writeback_rd_id,
 		       writeback_rst_inuse => writeback_rst_inuse,
@@ -426,5 +452,8 @@ begin
 		       exec_memread => exec_memread,
 		       exec_rd_id => exec_rd_id,
 		       stop_decode => stop_decode);
+
+	jmp_con : jmp_control port map ( in_opcode => opcode,
+					 out_jmp_mux_ctrl => jmp_mux_ctrl);
 
 end Behavioral;

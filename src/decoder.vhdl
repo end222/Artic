@@ -29,11 +29,30 @@ begin
 	decode : process(in_inst)
 	begin
 		-- TODO: Take into account more cases
-		if (in_inst(6 downto 0)="0100011") then
+		if (in_inst(6 downto 0)="0100011") then -- ST instructions
 			expanded_imm_internal(11 downto 5) <= in_inst(31 downto 25);
 			expanded_imm_internal(4 downto 0) <= in_inst(11 downto 7);
+			if(in_inst(31)='0') then
+				expanded_imm_internal(31 downto 12) <= "00000000000000000000";
+			else
+			    expanded_imm_internal(31 downto 12) <= "11111111111111111111";
+			end if;
+		elsif (in_inst(6 downto 0)="1101111") then -- JAL instructions
+			expanded_imm_internal(0) <= '0';
+			expanded_imm_internal(10 downto 1) <= in_inst(30 downto 21);
+			expanded_imm_internal(11) <= in_inst(20);
+			expanded_imm_internal(19 downto 12) <= in_inst(19 downto 12);
+			expanded_imm_internal(20) <= in_inst(31);
+			if(in_inst(31)='0') then
+				expanded_imm_internal(31 downto 21) <= "00000000000";
+			else expanded_imm_internal(31 downto 21) <= "11111111111";
+			end if;
 		else
 			expanded_imm_internal(11 downto 0) <= in_inst(31 downto 20);
+			if(in_inst(31)='0') then
+				expanded_imm_internal(31 downto 12) <= "00000000000000000000";
+			else expanded_imm_internal(31 downto 12) <= "11111111111111111111";
+			end if;
 		end if;
     end process;
     out_opcode <= in_inst(6 downto 0);
@@ -42,11 +61,11 @@ begin
     out_rd <= in_inst(11 downto 7);
     out_func3 <= in_inst(14 downto 12);
     out_func7 <= in_inst(31 downto 25);
-    expanded_imm_internal(31 downto 12) <= "00000000000000000000" when in_inst(31)='0' else "11111111111111111111";
     out_imm <= expanded_imm_internal;
 
     out_breg_WE <= '1' when in_inst(6 downto 0)="0010011" or in_inst(6 downto 0)="0110011" -- ALU operations (0110011) and ALU with imm (0010011)
                else '1' when in_inst(6 downto 0)="0000011" -- LD instructions
+	       else '1' when in_inst(6 downto 0)="1101111" -- JAL instruction, since PC+4 has to be stored in rd
                else '0';
     out_memtoreg <= '1' when in_inst(6 downto 0)="0000011" -- LD instructions (0000011)
             else '0';

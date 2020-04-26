@@ -20,6 +20,8 @@ entity exec_memory is
 	       -- Determines whether to use ALU output or MEM output to write to the RD reg
 	       exec_memtoreg : in std_logic;
 	       exec_breg_WE : in std_logic;
+	       exec_next_pc : in std_logic_vector(31 downto 0);
+	       exec_opcode : in std_logic_vector(6 downto 0);
 
 	       memory_rs1_value : out std_logic_vector(31 downto 0);
 	       memory_rs2_value : out std_logic_vector(31 downto 0);
@@ -29,6 +31,8 @@ entity exec_memory is
 	       memory_memwrite : out std_logic;
 	       memory_memread : out std_logic;
 	       memory_memtoreg : out std_logic;
+	       memory_next_pc : out std_logic_vector(31 downto 0);
+	       memory_opcode : out std_logic_vector(6 downto 0);
 	       memory_breg_WE : out std_logic);
 end exec_memory;
 
@@ -48,6 +52,7 @@ begin
 				memory_memread <= '0';
 				memory_memtoreg <= '0';
 				memory_breg_WE <= '0';
+				memory_next_pc <= X"00000000";
 
 			else
 				if (in_load = '1') then
@@ -60,6 +65,7 @@ begin
 					memory_memread <= exec_memread;
 					memory_memtoreg <= exec_memtoreg;
 					memory_breg_WE <= exec_breg_WE;
+					memory_next_pc <= exec_next_pc;
 				end if;
 			end if;
 		end if;
