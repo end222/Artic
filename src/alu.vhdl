@@ -36,6 +36,12 @@ begin
 	out_value_internal <= in_A + in_B when (op_ctrl="000" and in_func7="0000000" and op_code="0110011") -- ADD
 			      else in_A + in_imm when (op_ctrl="000" and op_code="0010011") or (op_code="0000011") or (op_code="0100011") -- ADDI, LD & ST address
 			      else in_A - in_B when (op_ctrl="000" and in_func7="0100000" and op_code="0110011")  -- SUB
+			      else in_A and in_B when (op_ctrl="111" and op_code="0110011") -- AND
+			      else in_A and in_imm when (op_ctrl="111" and op_code="0010011") -- ANDI
+			      else in_A or in_B when (op_ctrl="110" and op_code="0110011") -- OR
+			      else in_A or in_imm when (op_ctrl="110" and op_code="0010011") -- ORI
+			      else in_A xor in_B when (op_ctrl="100" and op_code="0110011") --XOR
+			      else in_A xor in_imm when (op_ctrl="100" and op_code="0010011") -- XORI
 			      else X"00000000";
 	out_value <= out_value_internal;
 end Behavioral;

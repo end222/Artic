@@ -45,7 +45,7 @@ begin
 				if (in_load = '1') then
 					if (memory_memtoreg='1') then
 						writeback_out_value <= memory_mem_out_value;
-					elsif (memory_opcode="1101111") then -- JAL instruction
+					elsif (memory_opcode="1101111" or memory_opcode="1100011") then -- JAL & Branch instructions
 						writeback_out_value <= memory_next_pc;
 					else
 						writeback_out_value <= memory_alu_out_value;

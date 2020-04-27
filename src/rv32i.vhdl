@@ -256,8 +256,22 @@ architecture Behavioral of RV32I is
 	signal jmp_mux_ctrl : std_logic;
 	component jmp_control is
 		Port ( in_opcode : in std_logic_vector (6 downto 0);
+		       in_func3 : in std_logic_vector(2 downto 0);
+		       eq : in std_logic;
+		       lt : in std_logic;
+		       ltu : in std_logic;
 		       out_jmp_mux_ctrl : out std_logic);
 	end component;
+
+	signal eq, lt, ltu : std_logic;
+	component jmp_compare is
+		Port ( in_A : in std_logic_vector(31 downto 0);
+		       in_B : in std_logic_vector(31 downto 0);
+		       eq : out std_logic;
+		       lt : out std_logic;
+		       ltu : out std_logic);
+	end component;
+
 
 begin
 	-- Load when there is no risk detected
@@ -344,7 +358,11 @@ begin
 		       decode_alu_src => '0',
 		       decode_opcode => opcode,
 		       decode_func7 => func7,
-		       decode_breg_WE => breg_WE,
+		       -- Take into account that when a branch is taken
+		       -- PC+4 has to be stored in rd. jmp_mux_ctrl is 1
+		       -- when the branch is taken or there's an unconditional
+		       -- jump
+		       decode_breg_WE => breg_WE or jmp_mux_ctrl,
 		       decode_next_pc => decode_next_pc,
 
 		       exec_rs1_value => exec_rs1_value,
@@ -454,6 +472,15 @@ begin
 		       stop_decode => stop_decode);
 
 	jmp_con : jmp_control port map ( in_opcode => opcode,
+					 in_func3 => func3,
+					 eq => eq,
+					 lt => lt,
+					 ltu => ltu,
 					 out_jmp_mux_ctrl => jmp_mux_ctrl);
 
+	jmp_comp : jmp_compare port map ( in_A => decode_rs1_value,
+					  in_B => decode_rs2_value,
+					  eq => eq,
+					  lt => lt,
+					  ltu => ltu);
 end Behavioral;
