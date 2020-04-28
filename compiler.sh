@@ -37,7 +37,6 @@ for i in $(cat < tmp); do
 	# Check if this line is a tag
 	if [ $(echo $i | grep -o ':' | wc -c) -gt 0 ]
 	then
-		echo "Tag"
 		touch tmp2
 		tag=$(echo $i | cut -d' ' -f1 | sed "s/://g")
 		for j in $(cat < tmp); do
@@ -59,3 +58,39 @@ for i in $(cat < tmp); do
 		address=$(( $address+4 ))
 	fi
 done
+
+# Finally replace each of the remaining instructions to Hexadecimal
+for i in $(cat < tmp); do
+	touch output
+	opcode=$(echo $i | cut -d' ' -f1)
+	case "$opcode" in
+		"la")
+			# LUI
+			imm=$(echo $i | cut -d' ' -f3)
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			inst=$(( ($imm >> 12 << 12) + ( $rd << 7 ) + 55))
+			echo "obase=16; $inst" | bc >> output
+			# ADDI
+			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rd << 15) + ($rd << 7) + 19))
+			echo "obase=16; $inst" | bc >> output
+			;;
+		"add")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			inst=$(( ( $rs2 << 20 ) + ( $rs1 << 15 ) + ( $rd << 7 ) + 51))
+			echo "obase=16; $inst" | bc >> output
+			;;
+		"addi")
+			;;
+		"jal")
+			;;
+		*)
+			;;
+	esac
+done
+cat output
+
+# Remove temp files
+rm output
+rm tmp
