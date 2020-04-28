@@ -15,6 +15,12 @@ then
 	echo " does not exist"
 fi
 
+# Remove tmp file if it exists
+if [ -f tmp ]
+then
+	rm tmp
+fi
+
 IFS=$'\n'       # make newlines the only separator
 set -f          # disable globbing
 
@@ -60,6 +66,7 @@ for i in $(cat < tmp); do
 done
 
 # Finally replace each of the remaining instructions to Hexadecimal
+touch tmp2
 for i in $(cat < tmp); do
 	opcode=$(echo $i | cut -d' ' -f1)
 	case "$opcode" in
@@ -68,36 +75,89 @@ for i in $(cat < tmp); do
 			imm=$(echo $i | cut -d' ' -f3)
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			inst=$(( ($imm >> 12 << 12) + ( $rd << 7 ) + 55))
-			echo "obase=16; $inst" | bc
+			echo "obase=16; $inst" | bc >> tmp2
 			# ADDI
 			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rd << 15) + ($rd << 7) + 19))
-			echo "obase=16; $inst" | bc
+			echo "obase=16; $inst" | bc >> tmp2
 			;;
 		"add")
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
 			rs2=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
 			inst=$(( ( $rs2 << 20 ) + ( $rs1 << 15 ) + ( $rd << 7 ) + 51))
-			echo "obase=16; $inst" | bc
+			echo "obase=16; $inst" | bc >> tmp2
 			;;
 		"lw")
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			rs1=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
 			imm=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
 			inst=$(( ($imm << 20) + ($rs1 << 15) + (2 << 12) + ($rd << 7) + 3))
-			echo "obase=16; $inst" | bc
+			echo "obase=16; $inst" | bc >> tmp2
 			;;
 		"addi")
 			;;
 		"jal")
 			;;
 		".word")
-			echo $i | cut -d' ' -f2 | cut -d'x' -f2
+			echo $i | cut -d' ' -f2 | cut -d'x' -f2 >> tmp2
 			;;
 		*)
 			;;
 	esac
 done
 
-# Remove temp files
+mv tmp2 tmp
+touch tmp2
+for i in $(cat < tmp); do
+	echo -n "X\"" >> tmp2
+	# Fill with 0s so that every instruction is 8 hexa chars long
+	iterations=$(( 9 - $( echo $i | wc -c)))
+	while [ $iterations -ne 0 ]
+	do
+		echo -n "0" >> tmp2
+		iterations=$(($iterations - 1))
+	done
+	echo "$i\"" >> tmp2
+done
+
+mv tmp2 tmp
+
+# Preparing the syntax to insert in the memory file
+touch tmp2
+
+# Space in memory left. This variable is used to fill the memory up with X"00000000".
+left=127
+echo -n "signal RAM : memory := (" >> tmp2
+for i in $(cat < tmp)
+do
+	if [ $left -ne 0 ]
+	then
+		echo -n "$i, " >> tmp2
+	else
+		echo -n "$i" >> tmp2
+	fi
+	left=$(($left - 1))
+done
+
+while [ $left -ge 0 ]
+do 
+	if [ $left -ne 0 ]
+	then
+		echo -n "X\"00000000\"," >> tmp2
+	else
+		echo -n "X\"00000000\"" >> tmp2
+	fi
+	left=$(($left - 1))
+done
+echo -n ");" >> tmp2
+
+mv tmp2 tmp
+
+# Create a new memory file with the new instructions
+cat src/memory.vhdl | sed "s/signal RAM.*$/$(cat tmp)/g" > src/memory2.vhdl
+
+# Replace the original memory with the new one
+mv src/memory2.vhdl src/memory.vhdl
+
+# Remove useless temporary files
 rm tmp
