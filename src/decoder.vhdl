@@ -57,6 +57,9 @@ begin
 				expanded_imm_internal(31 downto 13) <= "0000000000000000000";
 			else expanded_imm_internal(31 downto 13) <= "1111111111111111111";
 			end if;
+		elsif (in_inst(6 downto 0)="0110111") then -- LUI instruction
+			expanded_imm_internal(11 downto 0) <= "000000000000";
+			expanded_imm_internal(31 downto 12) <= in_inst(31 downto 12);
 		else
 			expanded_imm_internal(11 downto 0) <= in_inst(31 downto 20);
 			if(in_inst(31)='0') then

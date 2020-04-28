@@ -11,7 +11,7 @@ use ieee.std_logic_unsigned.all;
 entity memory is 
 	Port ( in_clk : in std_logic;
 	       in_addr : in std_logic_vector(31 downto 0);
-	       in_addr2 : in std_logic_vector(31 downto 0)
+	       in_addr2 : in std_logic_vector(31 downto 0);
 	       in_D : in std_logic_vector(31 downto 0);
 	       in_WE : in std_logic;
 	       in_RE : in std_logic;
@@ -22,8 +22,8 @@ end memory;
 
 architecture Behavioral of memory is
 	type memory is array(0 to 127) of std_logic_vector(31 downto 0);
-	signal RAM : memory := ( X"00002083", X"004001ef", X"00102823", X"00402103", X"00000000", X"00000000", X"00000000",
-	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",
+	signal RAM : memory := ( X"000000B7", X"01808093", X"0000a103", X"0040a183", X"00210233", X"003102b3", X"00000001",
+	X"00000002", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",
 	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",
 	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",
 	X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000", X"00000000",

@@ -12,6 +12,7 @@ entity exec_memory is
 
 	       exec_rs1_value : in std_logic_vector(31 downto 0);
 	       exec_rs2_value : in std_logic_vector(31 downto 0);
+	       exec_imm : in std_logic_vector(31 downto 0);
 	       exec_alu_out_value : in std_logic_vector(31 downto 0);
 	       exec_rd_id : in std_logic_vector(4 downto 0);
 	       exec_rst_inuse : in std_logic; -- Use of RD for risk detection
@@ -26,6 +27,7 @@ entity exec_memory is
 	       memory_rs1_value : out std_logic_vector(31 downto 0);
 	       memory_rs2_value : out std_logic_vector(31 downto 0);
 	       memory_alu_out_value : out std_logic_vector(31 downto 0);
+	       memory_imm : out std_logic_vector(31 downto 0);
 	       memory_rd_id : out std_logic_vector(4 downto 0);
 	       memory_rst_inuse : out std_logic;
 	       memory_memwrite : out std_logic;
@@ -53,7 +55,7 @@ begin
 				memory_memtoreg <= '0';
 				memory_breg_WE <= '0';
 				memory_next_pc <= X"00000000";
-
+				memory_imm <= X"00000000";
 			else
 				if (in_load = '1') then
 					memory_rs1_value <= exec_rs1_value;
@@ -66,6 +68,7 @@ begin
 					memory_memtoreg <= exec_memtoreg;
 					memory_breg_WE <= exec_breg_WE;
 					memory_next_pc <= exec_next_pc;
+					memory_imm <= exec_imm;
 				end if;
 			end if;
 		end if;

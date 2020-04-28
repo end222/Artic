@@ -61,7 +61,6 @@ done
 
 # Finally replace each of the remaining instructions to Hexadecimal
 for i in $(cat < tmp); do
-	touch output
 	opcode=$(echo $i | cut -d' ' -f1)
 	case "$opcode" in
 		"la")
@@ -69,28 +68,36 @@ for i in $(cat < tmp); do
 			imm=$(echo $i | cut -d' ' -f3)
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			inst=$(( ($imm >> 12 << 12) + ( $rd << 7 ) + 55))
-			echo "obase=16; $inst" | bc >> output
+			echo "obase=16; $inst" | bc
 			# ADDI
 			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rd << 15) + ($rd << 7) + 19))
-			echo "obase=16; $inst" | bc >> output
+			echo "obase=16; $inst" | bc
 			;;
 		"add")
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
 			rs2=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
 			inst=$(( ( $rs2 << 20 ) + ( $rs1 << 15 ) + ( $rd << 7 ) + 51))
-			echo "obase=16; $inst" | bc >> output
+			echo "obase=16; $inst" | bc
+			;;
+		"lw")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs1=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			inst=$(( ($imm << 20) + ($rs1 << 15) + (2 << 12) + ($rd << 7) + 3))
+			echo "obase=16; $inst" | bc
 			;;
 		"addi")
 			;;
 		"jal")
 			;;
+		".word")
+			echo $i | cut -d' ' -f2 | cut -d'x' -f2
+			;;
 		*)
 			;;
 	esac
 done
-cat output
 
 # Remove temp files
-rm output
 rm tmp

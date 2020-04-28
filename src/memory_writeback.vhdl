@@ -14,6 +14,7 @@ entity memory_writeback is
 
 	       memory_alu_out_value : in std_logic_vector(31 downto 0);
 	       memory_mem_out_value : in std_logic_vector(31 downto 0);
+	       memory_imm : in std_logic_vector(31 downto 0);
 	       memory_rd_id : in std_logic_vector(4 downto 0);
 	       memory_rst_inuse : in std_logic; -- Use of RD for risk detection
 	       -- Determines whether to use ALU output or MEM output to write to the RD reg
@@ -47,6 +48,8 @@ begin
 						writeback_out_value <= memory_mem_out_value;
 					elsif (memory_opcode="1101111" or memory_opcode="1100011") then -- JAL & Branch instructions
 						writeback_out_value <= memory_next_pc;
+					elsif (memory_opcode="0110111") then -- LUI instruction
+						writeback_out_value <= memory_imm;
 					else
 						writeback_out_value <= memory_alu_out_value;
 					end if;

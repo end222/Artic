@@ -1,7 +1,9 @@
 la x1, test_data
 
-ld x2 0(x1)
-add x3, x2, x2
+lw x2 0(x1)
+lw x3 4(x1)
+add x4, x2, x2
+add x5, x2, x3
 
 .data
 test_data:

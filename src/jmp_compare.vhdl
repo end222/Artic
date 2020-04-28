@@ -3,7 +3,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_arith.all;
+--use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_unsigned.all;
 
@@ -21,6 +21,6 @@ begin
 	      else '0';
 	ltu <= '1' when to_integer(unsigned(in_A)) < to_integer(unsigned(in_B))
 	      else '0';
-	eq <= '1' when to_integer(in_A) = to_integer(in_B)
+	eq <= '1' when to_integer(unsigned(in_A)) = to_integer(unsigned(in_B))
 	      else '0';
 end Behavioral;
