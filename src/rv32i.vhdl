@@ -38,13 +38,16 @@ architecture Behavioral of RV32I is
 	end component;
 
 	signal inst_out : std_logic_vector(31 downto 0);
-	component inst_memory is
+	component memory is
 		Port ( in_clk : in std_logic;
 		       in_addr : in std_logic_vector(31 downto 0);
+		       in_addr2 : in std_logic_vector(31 downto 0);
 		       in_D : in std_logic_vector(31 downto 0);
 		       in_WE : in std_logic;
 		       in_RE : in std_logic;
-		       out_val : out std_logic_vector(31 downto 0));
+		       in_RE2 : in std_logic;
+		       out_val : out std_logic_vector(31 downto 0);
+		       out_val2 : out std_logic_vector(31 downto 0));
 	end component;
 
 	signal decode_inst_fd, decode_next_pc : std_logic_vector(31 downto 0);
@@ -188,14 +191,6 @@ architecture Behavioral of RV32I is
 	end component;
 
 	signal memory_mem_out_value : std_logic_vector(31 downto 0);
-	component data_memory is
-		Port ( in_clk : in std_logic;
-		       in_addr : in std_logic_vector(31 downto 0);
-		       in_D : in std_logic_vector(31 downto 0);
-		       in_WE : in std_logic;
-		       in_RE : in std_logic;
-		       out_val : out std_logic_vector(31 downto 0));
-	end component;
 
 	signal writeback_out_value : std_logic_vector(31 downto 0);
 	signal writeback_rd_id : std_logic_vector(4 downto 0);
@@ -300,12 +295,15 @@ begin
 				      in_1 => imm,
 				      out_val => jmp_address);
 
-	inst_mem : inst_memory port map ( in_clk => clk,
+	mem : memory port map ( in_clk => clk,
 					  in_addr => PC_out,
-					  in_D => X"00000000",
-					  in_WE => '0',
+					  in_addr2 => memory_alu_out_value,
+					  in_D => memory_rs2_value,
+					  in_WE => memory_memwrite,
 					  in_RE => '1',
-					  out_val => inst_out);
+					  in_RE2 => memory_memread,
+					  out_val => inst_out,
+					  out_val2 => memory_mem_out_value);
 
 	fd_reg : fetch_decode port map ( in_clk => clk,
 					 -- Reset when a jump occurs so as to avoid executing PC+4
@@ -417,13 +415,6 @@ begin
 				       memory_next_pc => memory_next_pc,
 				       memory_opcode => memory_opcode,
 				       memory_breg_WE => memory_breg_WE);
-
-	data_mem : data_memory port map ( in_clk => clk,
-					in_addr => memory_alu_out_value,
-					in_D => memory_rs2_value,
-					in_WE => memory_memwrite,
-					in_RE => memory_memread,
-					out_val => memory_mem_out_value);
 
 	mw_reg : memory_writeback port map ( in_clk => clk,
 		       in_reset => in_reset,
