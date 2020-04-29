@@ -29,7 +29,7 @@ touch tmp
 
 # Iterate over the asm file removing useless characters
 for i in $(cat < "$1"); do
-	treated_input=$(echo $i | sed "s/[',', '(']/ /g" | sed "s/[';',')']//g" | tr -s " ")
+	treated_input=$(echo $i | sed "s/[',', '(']/ /g" | sed "s/[';',')']//g" | sed "s/0x//g" | tr -s " ")
 	if [ $treated_input != "" ] && [ $(echo $treated_input | head -c 1) != "#" ]
 	then
 		echo $treated_input >> tmp
@@ -67,6 +67,10 @@ done
 
 # Finally replace each of the remaining instructions to Hexadecimal
 touch tmp2
+
+# Used for instructions like JMP, that use imm as relative to PC
+address=0
+
 for i in $(cat < tmp); do
 	opcode=$(echo $i | cut -d' ' -f1)
 	case "$opcode" in
@@ -76,9 +80,23 @@ for i in $(cat < tmp); do
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			inst=$(( ($imm >> 12 << 12) + ( $rd << 7 ) + 55))
 			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
 			# ADDI
 			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rd << 15) + ($rd << 7) + 19))
 			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"li")
+			# LUI
+			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f3)" | bc)
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			inst=$(( ( $imm >> 12 << 12) + ( $rd << 7 ) + 55))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			# ADDI
+			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rd << 15) + ($rd << 7) + 19))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
 			;;
 		"add")
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
@@ -86,6 +104,7 @@ for i in $(cat < tmp); do
 			rs2=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
 			inst=$(( ( $rs2 << 20 ) + ( $rs1 << 15 ) + ( $rd << 7 ) + 51))
 			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
 			;;
 		"lw")
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
@@ -93,18 +112,54 @@ for i in $(cat < tmp); do
 			imm=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
 			inst=$(( ($imm << 20) + ($rs1 << 15) + (2 << 12) + ($rd << 7) + 3))
 			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
 			;;
 		"addi")
 			;;
 		"jal")
+			imm=$(echo $i | cut -d' ' -f3)
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+
+			# >> 1 is used because the destination has to be represented as a 
+			# multiple of 2
+			dest=$(( ($imm - $address - 4) >> 1 ))
+			if [ $dest -lt 0 ] 
+			then
+				# So as to represent negatives correctly
+				dest=$(( $dest + (1 << 20)))
+			fi
+
+			inst=$(( ( ( ($dest >> 19) % 2) << 31 ) + ( ( $dest % ( 1 << 10 ) ) << 21 ) + ( ( ( $dest >> 9 ) % 2 ) << 20 ) + ( ( ( $dest >> 10 ) % ( 1 << 8 ) ) << 12 ) + ( $rd << 7 ) + 111 ))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"bne")
+			rs1=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			# >> 1 is used because the destination has to be represented as a 
+			# multiple of 2
+			dest=$(( ($imm - $address - 4) >> 1 ))
+			if [ $dest -lt 0 ] 
+			then
+				# So as to represent negatives correctly
+				dest=$(( $dest + (1 << 20)))
+			fi
+
+			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (1 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
 			;;
 		".word")
 			echo $i | cut -d' ' -f2 | cut -d'x' -f2 >> tmp2
+			address=$(( $address+4 ))
 			;;
 		*)
 			;;
 	esac
 done
+
+cat tmp2
 
 mv tmp2 tmp
 touch tmp2
@@ -127,6 +182,7 @@ touch tmp2
 
 # Space in memory left. This variable is used to fill the memory up with X"00000000".
 left=127
+
 echo -n "signal RAM : memory := (" >> tmp2
 for i in $(cat < tmp)
 do

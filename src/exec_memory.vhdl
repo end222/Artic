@@ -56,6 +56,7 @@ begin
 				memory_breg_WE <= '0';
 				memory_next_pc <= X"00000000";
 				memory_imm <= X"00000000";
+				memory_opcode <= "0000000";
 			else
 				if (in_load = '1') then
 					memory_rs1_value <= exec_rs1_value;
@@ -69,6 +70,7 @@ begin
 					memory_breg_WE <= exec_breg_WE;
 					memory_next_pc <= exec_next_pc;
 					memory_imm <= exec_imm;
+					memory_opcode <= exec_opcode;
 				end if;
 			end if;
 		end if;

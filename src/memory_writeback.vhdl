@@ -48,8 +48,6 @@ begin
 						writeback_out_value <= memory_mem_out_value;
 					elsif (memory_opcode="1101111" or memory_opcode="1100011") then -- JAL & Branch instructions
 						writeback_out_value <= memory_next_pc;
-					elsif (memory_opcode="0110111") then -- LUI instruction
-						writeback_out_value <= memory_imm;
 					else
 						writeback_out_value <= memory_alu_out_value;
 					end if;

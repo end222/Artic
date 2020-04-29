@@ -6,6 +6,9 @@ add x4, x2, x2
 add x5, x2, x3
 add x6, x4, x5
 
+end:
+jal x7, end
+
 .data
 test_data:
 .word 0x00000001

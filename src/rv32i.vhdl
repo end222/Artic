@@ -246,6 +246,10 @@ architecture Behavioral of RV32I is
 		       decode_rs2_id : in std_logic_vector(4 downto 0);
 		       exec_rd_id : in std_logic_vector(4 downto 0);
 		       exec_memread : in std_logic;
+		       exec_breg_WE : in std_logic;
+		       memory_rd_id : in std_logic_vector(4 downto 0);
+		       memory_breg_WE : in std_logic;
+		       decode_opcode : in std_logic_vector(6 downto 0);
 		       stop_decode : out std_logic);
 	end component;
 
@@ -274,7 +278,7 @@ architecture Behavioral of RV32I is
 begin
 	-- Load when there is no risk detected
 	load_PC <= not stop_decode;
-	load_fd <= not stop_decode or not jmp_mux_ctrl;
+	load_fd <= not stop_decode and not jmp_mux_ctrl;
 	load_de <= not stop_decode;
 	reset_de <= in_reset or stop_decode;
 
@@ -360,10 +364,8 @@ begin
 		       decode_opcode => opcode,
 		       decode_func7 => func7,
 		       -- Take into account that when a branch is taken
-		       -- PC+4 has to be stored in rd. jmp_mux_ctrl is 1
-		       -- when the branch is taken or there's an unconditional
-		       -- jump
-		       decode_breg_WE => breg_WE or jmp_mux_ctrl,
+		       -- PC+4 has to be stored in rd.
+		       decode_breg_WE => breg_WE,
 		       decode_next_pc => decode_next_pc,
 
 		       exec_rs1_value => exec_rs1_value,
@@ -466,6 +468,10 @@ begin
 		       decode_rs2_id => decode_rs2_id,
 		       exec_memread => exec_memread,
 		       exec_rd_id => exec_rd_id,
+		       exec_breg_WE => exec_breg_WE,
+		       memory_rd_id => memory_rd_id,
+		       memory_breg_WE => memory_breg_WE,
+	       	       decode_opcode => opcode,
 		       stop_decode => stop_decode);
 
 	jmp_con : jmp_control port map ( in_opcode => opcode,

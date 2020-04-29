@@ -34,6 +34,7 @@ architecture Behavioral of ALU is
 	signal out_value_internal : std_logic_vector (31 downto 0);
 begin
 	out_value_internal <= in_A + in_B when (op_ctrl="000" and in_func7="0000000" and op_code="0110011") -- ADD
+			      else in_imm when (op_code="0110111") -- LUI
 			      else in_A + in_imm when (op_ctrl="000" and op_code="0010011") or (op_code="0000011") or (op_code="0100011") -- ADDI, LD & ST address
 			      else in_A - in_B when (op_ctrl="000" and in_func7="0100000" and op_code="0110011")  -- SUB
 			      else in_A and in_B when (op_ctrl="111" and op_code="0110011") -- AND
