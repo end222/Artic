@@ -278,7 +278,7 @@ architecture Behavioral of RV32I is
 begin
 	-- Load when there is no risk detected
 	load_PC <= not stop_decode;
-	load_fd <= not stop_decode and not jmp_mux_ctrl;
+	load_fd <= not stop_decode;
 	load_de <= not stop_decode;
 	reset_de <= in_reset or stop_decode;
 
@@ -314,8 +314,8 @@ begin
 
 	fd_reg : fetch_decode port map ( in_clk => clk,
 					 -- Reset when a jump occurs so as to avoid executing PC+4
-					 in_reset => jmp_mux_ctrl, 
-					 in_load => load_fd,
+					 in_reset => jmp_mux_ctrl and load_fd,
+					 in_load => load_fd and not jmp_mux_ctrl,
 					 fetch_inst => inst_out,
 					 fetch_next_pc => adder4_out,
 					 decode_inst => decode_inst_fd,
