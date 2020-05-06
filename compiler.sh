@@ -91,9 +91,12 @@ for i in $(cat < tmp); do
 			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f3)" | bc)
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			inst=$(( ( $imm >> 12 << 12) + ( $rd << 7 ) + 55))
+			if [ $(( $imm % (1 << 12) )) -ge 2048 ]
+			then
+				inst=$(( $inst + (1 << 12)))
+			fi
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
-			# ADDI
 			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rd << 15) + ($rd << 7) + 19))
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
@@ -107,9 +110,20 @@ for i in $(cat < tmp); do
 			address=$(( $address+4 ))
 			;;
 		"lw")
+			# Take into account that the offset can be negative
+			negative_offset=0
+			if [[ $i == *"-"* ]]
+			then
+				negative_offset=1
+				i=$(echo $i | sed "s/-//g")
+			fi
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			rs1=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
 			imm=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			if [ $negative_offset -eq 1 ]
+			then
+				imm=$((($imm ^ 4095) + 1)) # Invert all bits and add 1, so as to negate i
+			fi
 			inst=$(( ($imm << 20) + ($rs1 << 15) + (2 << 12) + ($rd << 7) + 3))
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
@@ -145,7 +159,6 @@ for i in $(cat < tmp); do
 				# So as to represent negatives correctly
 				dest=$(( $dest + (1 << 20)))
 			fi
-
 			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (1 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
