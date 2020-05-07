@@ -47,11 +47,11 @@ for i in $(cat < tmp); do
 		tag=$(echo $i | cut -d' ' -f1 | sed "s/://g")
 		for j in $(cat < tmp); do
 
-			# This comparition aims to remove the Tag definition
+			# This comparison aims to remove the Tag definition
 			# and inserts the address in decimal value
 			if [ $j != $i ]
 			then
-				echo $j | sed "s/$tag/$address/g" >> tmp2
+				echo $j | sed "s/ ${tag}$/ $address/g" >> tmp2
 			fi
 		done
 		rm tmp
@@ -122,9 +122,28 @@ for i in $(cat < tmp); do
 			imm=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
 			if [ $negative_offset -eq 1 ]
 			then
-				imm=$((($imm ^ 4095) + 1)) # Invert all bits and add 1, so as to negate i
+				imm=$((4096 - $imm))
 			fi
 			inst=$(( ($imm << 20) + ($rs1 << 15) + (2 << 12) + ($rd << 7) + 3))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"sw")
+			# Take into account that the offset can be negative
+			negative_offset=0
+			if [[ $i == *"-"* ]]
+			then
+				negative_offset=1
+				i=$(echo $i | sed "s/-//g")
+			fi
+			rs1=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			if [ $negative_offset -eq 1 ]
+			then
+				imm=$((4096 - $imm))
+			fi
+			inst=$(( ( ($imm >> 5) << 25) + ($rs2 << 20) + ($rs1 << 15) + (2 << 12) + ( ($imm % (1 << 5)) << 7 ) + 35))
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
