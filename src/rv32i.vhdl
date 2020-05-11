@@ -46,6 +46,7 @@ architecture Behavioral of RV32I is
 		       in_WE : in std_logic;
 		       in_RE : in std_logic;
 		       in_RE2 : in std_logic;
+		       in_func3 : in std_logic_vector(2 downto 0);
 		       out_val : out std_logic_vector(31 downto 0);
 		       out_val2 : out std_logic_vector(31 downto 0));
 	end component;
@@ -161,6 +162,7 @@ architecture Behavioral of RV32I is
 	signal memory_rd_id : std_logic_vector(4 downto 0);
 	signal memory_rst_inuse, memory_memwrite, memory_memread, memory_memtoreg, memory_breg_WE : std_logic;
 	signal memory_opcode : std_logic_vector(6 downto 0);
+	signal memory_func3 : std_logic_vector(2 downto 0);
 	component exec_memory is
 		Port ( in_clk : in std_logic;
 		       in_reset : in std_logic;
@@ -177,6 +179,7 @@ architecture Behavioral of RV32I is
 		       exec_breg_WE : in std_logic;
 		       exec_next_pc : in std_logic_vector(31 downto 0);
 		       exec_opcode : in std_logic_vector(6 downto 0);
+		       exec_func3 : in std_logic_vector(2 downto 0);
 
 		       memory_rs1_value : out std_logic_vector(31 downto 0);
 		       memory_rs2_value : out std_logic_vector(31 downto 0);
@@ -189,7 +192,8 @@ architecture Behavioral of RV32I is
 		       memory_memtoreg : out std_logic;
 		       memory_next_pc : out std_logic_vector(31 downto 0);
 		       memory_opcode : out std_logic_vector(6 downto 0);
-		       memory_breg_WE : out std_logic);
+		       memory_breg_WE : out std_logic;
+		       memory_func3 : out std_logic_vector(2 downto 0));
 	end component;
 
 	signal memory_mem_out_value : std_logic_vector(31 downto 0);
@@ -309,6 +313,7 @@ begin
 					  in_WE => memory_memwrite,
 					  in_RE => '1',
 					  in_RE2 => memory_memread,
+					  in_func3 => memory_func3,
 					  out_val => inst_out,
 					  out_val2 => memory_mem_out_value);
 
@@ -410,6 +415,7 @@ begin
 				       exec_next_pc => exec_next_pc,
 				       exec_opcode => exec_opcode,
 				       exec_imm => exec_imm,
+				       exec_func3 => exec_alu_opctrl,
 				       memory_rs1_value => memory_rs1_value,
 				       memory_rs2_value => memory_rs2_value,
 				       memory_alu_out_value => memory_alu_out_value,
@@ -421,7 +427,8 @@ begin
 				       memory_next_pc => memory_next_pc,
 				       memory_opcode => memory_opcode,
 				       memory_imm => memory_imm,
-				       memory_breg_WE => memory_breg_WE);
+				       memory_breg_WE => memory_breg_WE,
+				       memory_func3 => memory_func3);
 
 	mw_reg : memory_writeback port map ( in_clk => clk,
 		       in_reset => in_reset,

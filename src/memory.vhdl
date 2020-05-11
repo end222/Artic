@@ -16,6 +16,7 @@ entity memory is
 	       in_WE : in std_logic;
 	       in_RE : in std_logic;
 	       in_RE2 : in std_logic;
+	       in_func3 : in std_logic_vector(2 downto 0);
 	       out_val : out std_logic_vector(31 downto 0);
 	       out_val2 : out std_logic_vector(31 downto 0));
 end memory;
@@ -34,11 +35,53 @@ begin
 	begin
 		if (in_clk'event and in_clk = '1') then
 			if (in_WE = '1') then
-				RAM(conv_integer(addr7b2)) <= in_D;
+				-- SW
+				if (in_func3 = "010") then
+					RAM(conv_integer(addr7b2)) <= in_D;
+
+				-- SH
+				elsif (in_func3 = "001") then
+					RAM(conv_integer(addr7b2)) <= in_D;
+
+				-- SB
+				else
+					RAM(conv_integer(addr7b2)) <= in_D;
+				end if;
 			end if;
 		end if;
 	end process;
 
-	out_val <= RAM(conv_integer(addr7b)) when (in_RE = '1') else X"00000000";
-	out_val2 <= RAM(conv_integer(addr7b2)) when (in_RE2 = '1') else X"00000000";
+	process(addr7b, addr7b2, in_RE, in_RE2, in_func3)
+	begin
+		if (in_RE = '1') then
+			out_val <= RAM(conv_integer(addr7b));
+		else
+			out_val <= X"00000000";	
+		end if;
+		if (in_RE2 = '1') then 
+			-- LW
+			if (in_func3 = "010") then
+				out_val2 <= RAM(conv_integer(addr7b2));
+
+			-- LH
+			elsif (in_func3 = "001") then
+				out_val2 <= RAM(conv_integer(addr7b2));
+
+			-- LB
+			elsif ( in_func3 = "000" ) then
+				out_val2 <= RAM(conv_integer(addr7b2));
+
+			-- LBU
+			elsif ( in_func3 = "100" ) then
+				out_val2 <= RAM(conv_integer(addr7b2));
+
+			-- LHU
+			else
+				out_val2 <= RAM(conv_integer(addr7b2));
+			end if;
+
+		else
+			out_val2 <= X"00000000";
+		end if;
+	end process;
 end Behavioral;

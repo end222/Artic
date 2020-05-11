@@ -23,6 +23,7 @@ entity exec_memory is
 	       exec_breg_WE : in std_logic;
 	       exec_next_pc : in std_logic_vector(31 downto 0);
 	       exec_opcode : in std_logic_vector(6 downto 0);
+	       exec_func3 : in std_logic_vector(2 downto 0);
 
 	       memory_rs1_value : out std_logic_vector(31 downto 0);
 	       memory_rs2_value : out std_logic_vector(31 downto 0);
@@ -35,7 +36,8 @@ entity exec_memory is
 	       memory_memtoreg : out std_logic;
 	       memory_next_pc : out std_logic_vector(31 downto 0);
 	       memory_opcode : out std_logic_vector(6 downto 0);
-	       memory_breg_WE : out std_logic);
+	       memory_breg_WE : out std_logic;
+	       memory_func3 : out std_logic_vector(2 downto 0));
 end exec_memory;
 
 
@@ -57,6 +59,7 @@ begin
 				memory_next_pc <= X"00000000";
 				memory_imm <= X"00000000";
 				memory_opcode <= "0000000";
+				memory_func3 <= "000";
 			else
 				if (in_load = '1') then
 					memory_rs1_value <= exec_rs1_value;
@@ -71,6 +74,7 @@ begin
 					memory_next_pc <= exec_next_pc;
 					memory_imm <= exec_imm;
 					memory_opcode <= exec_opcode;
+					memory_func3 <= exec_func3;
 				end if;
 			end if;
 		end if;
