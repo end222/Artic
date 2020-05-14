@@ -94,6 +94,8 @@ for i in $(cat < tmp); do
 			if [ $(( $imm % (1 << 12) )) -ge 2048 ]
 			then
 				inst=$(( $inst + (1 << 12)))
+				# Avoid 33b length instruction (which happens with li 0xFFFFFFFF)
+				inst=$(( $inst % (1 << 32)))
 			fi
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))

@@ -23,12 +23,13 @@ end memory;
 
 architecture Behavioral of memory is
 	type memory is array(0 to 127) of std_logic_vector(31 downto 0);
-	signal RAM : memory := (X"004000EF", X"FFDFF0EF", X"000005B7", X"00158593", X"000000B7", X"0E408093", X"00AA0137", X"0AA10113", X"0020A023", X"0000A183", X"FC311CE3", X"00B50533", X"AA00B137", X"A0010113", X"0020A223", X"0040A183", X"FC3110E3", X"00B50533", X"0AA01137", X"AA010113", X"0020A423", X"0080A183", X"FA3114E3", X"00B50533", X"A00AA137", X"00A10113", X"0020A623", X"00C0A183", X"F83118E3", X"00B50533", X"000000B7", X"10008093", X"00AA0137", X"0AA10113", X"FE20AA23", X"FF40A183", X"F63118E3", X"00B50533", X"AA00B137", X"A0010113", X"FE20AC23", X"FF80A183", X"F4311CE3", X"00B50533", X"0AA01137", X"AA010113", X"FE20AE23", X"FFC0A183", X"F43110E3", X"00B50533", X"A00AA137", X"00A10113", X"0020A023", X"0000A183", X"F23114E3", X"00B50533", X"FFDFF0EF", X"DEADBEEF", X"DEADBEEF", X"DEADBEEF", X"DEADBEEF", X"DEADBEEF", X"DEADBEEF", X"DEADBEEF", X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000");
+	signal RAM : memory := (X"004000EF", X"FFDFF0EF", X"000005B7", X"00158593", X"000000B7", X"0C408093", X"0000D103", X"000001B7", X"0FF18193", X"FC311EE3", X"00B50533", X"0040D103", X"000101B7", X"F0018193", X"FC3114E3", X"00B50533", X"0080D103", X"000011B7", X"FF018193", X"FA311AE3", X"00B50533", X"00C0D103", X"0000F1B7", X"00F18193", X"FA3110E3", X"00B50533", X"000000B7", X"0D008093", X"FF40D103", X"000001B7", X"0FF18193", X"F83112E3", X"00B50533", X"FF80D103", X"000101B7", X"F0018193", X"F63118E3", X"00B50533", X"FFC0D103", X"000011B7", X"FF018193", X"F4311EE3", X"00B50533", X"0000D103", X"0000F1B7", X"00F18193", X"F43114E3", X"00B50533", X"FFDFF0EF", X"000000FF", X"0000FF00", X"00000FF0", X"0000F00F", X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000",X"00000000");
 	signal addr7b : std_logic_vector(6 downto 0); 
 	signal addr7b2 : std_logic_vector(6 downto 0); 
 begin
 	-- addr7b is used to index instructions and addr7b2 is used by the memory stage.
 	-- Then only addr7b2 can be used to write to memory
+	-- TODO: this is not taking into account misaligned addresses
 	addr7b <= in_addr(8 downto 2);
 	addr7b2 <= in_addr2(8 downto 2);
 	process (in_clk)
@@ -41,11 +42,22 @@ begin
 
 				-- SH
 				elsif (in_func3 = "001") then
-					RAM(conv_integer(addr7b2)) <= in_D;
-
+					if (in_addr2(1) = '1') then
+						RAM(conv_integer(addr7b2))(31 downto 16) <= in_D(15 downto 0);
+					else
+						RAM(conv_integer(addr7b2))(15 downto 0) <= in_D(15 downto 0);
+					end if;
 				-- SB
 				else
-					RAM(conv_integer(addr7b2)) <= in_D;
+					if(in_addr2(1 downto 0) = "00") then
+						RAM(conv_integer(addr7b2))(7 downto 0) <= in_D(7 downto 0);
+					elsif(in_addr2(1 downto 0) = "01") then
+						RAM(conv_integer(addr7b2))(15 downto 8) <= in_D(7 downto 0);
+					elsif(in_addr2(1 downto 0) = "10") then
+						RAM(conv_integer(addr7b2))(23 downto 16) <= in_D(7 downto 0);
+					else
+						RAM(conv_integer(addr7b2))(31 downto 24) <= in_D(7 downto 0);
+					end if;
 				end if;
 			end if;
 		end if;
@@ -59,25 +71,93 @@ begin
 			out_val <= X"00000000";	
 		end if;
 		if (in_RE2 = '1') then 
-			-- LW
+				-- LW
 			if (in_func3 = "010") then
 				out_val2 <= RAM(conv_integer(addr7b2));
 
-			-- LH
+				-- LH
 			elsif (in_func3 = "001") then
-				out_val2 <= RAM(conv_integer(addr7b2));
+				if (in_addr2(1) = '1') then
+					out_val2(15 downto 0) <= RAM(conv_integer(addr7b2))(31 downto 16);
+						-- Expand taking sign into account
+					if (RAM(conv_integer(addr7b2))(31) = '1') then
+						out_val2(31 downto 16) <= X"FFFF";
+					else
+						out_val2(31 downto 16) <= X"0000";
+					end if;
+				else
+					out_val2(15 downto 0) <= RAM(conv_integer(addr7b2))(15 downto 0);
+						-- Expand taking sign into account
+					if (RAM(conv_integer(addr7b2))(15) = '1') then
+						out_val2(31 downto 16) <= X"FFFF";
+					else
+						out_val2(31 downto 16) <= X"0000";
+					end if;
+				end if;
 
-			-- LB
+				-- LB
 			elsif ( in_func3 = "000" ) then
-				out_val2 <= RAM(conv_integer(addr7b2));
+				if(in_addr2(1 downto 0) = "00") then
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(7 downto 0);
+						-- Expand taking sign into account
+					if (RAM(conv_integer(addr7b2))(7) = '1') then
+						out_val2(31 downto 8) <= X"FFFFFF";
+					else
+						out_val2(31 downto 8) <= X"000000";
+					end if;
+				elsif(in_addr2(1 downto 0) = "01") then
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(15 downto 8);
+						-- Expand taking sign into account
+					if (RAM(conv_integer(addr7b2))(15) = '1') then
+						out_val2(31 downto 8) <= X"FFFFFF";
+					else
+						out_val2(31 downto 8) <= X"000000";
+					end if;
+				elsif(in_addr2(1 downto 0) = "10") then
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(23 downto 16);
+						-- Expand taking sign into account
+					if (RAM(conv_integer(addr7b2))(23) = '1') then
+						out_val2(31 downto 8) <= X"FFFFFF";
+					else
+						out_val2(31 downto 8) <= X"000000";
+					end if;
+				else
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(31 downto 24);
+						-- Expand taking sign into account
+					if (RAM(conv_integer(addr7b2))(31) = '1') then
+						out_val2(31 downto 8) <= X"FFFFFF";
+					else
+						out_val2(31 downto 8) <= X"000000";
+					end if;
+				end if;
 
-			-- LBU
+				-- LBU and LHU do not sign-extend, unlike the previous ones
+				-- LBU
 			elsif ( in_func3 = "100" ) then
-				out_val2 <= RAM(conv_integer(addr7b2));
+				if(in_addr2(1 downto 0) = "00") then
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(7 downto 0);
+					out_val2(31 downto 8) <= X"000000";
+				elsif(in_addr2(1 downto 0) = "01") then
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(15 downto 8);
+					out_val2(31 downto 8) <= X"000000";
+				elsif(in_addr2(1 downto 0) = "10") then
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(23 downto 16);
+					out_val2(31 downto 8) <= X"000000";
+				else
+					out_val2(7 downto 0) <= RAM(conv_integer(addr7b2))(31 downto 24);
+					out_val2(31 downto 8) <= X"000000";
+				end if;
 
-			-- LHU
+				-- LHU
 			else
-				out_val2 <= RAM(conv_integer(addr7b2));
+				if (in_addr2(1) = '1') then
+					out_val2(15 downto 0) <= RAM(conv_integer(addr7b2))(31 downto 16);
+					out_val2(31 downto 16) <= X"0000";
+				else
+					out_val2(15 downto 0) <= RAM(conv_integer(addr7b2))(15 downto 0);
+					out_val2(31 downto 16) <= X"0000";
+				end if;
+
 			end if;
 
 		else
