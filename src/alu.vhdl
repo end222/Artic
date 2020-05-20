@@ -45,9 +45,9 @@ begin
 			      else in_A xor in_B when (op_ctrl="100" and op_code="0110011") --XOR
 			      else in_A xor in_imm when (op_ctrl="100" and op_code="0010011") -- XORI
 			      else X"00000001" when (op_ctrl="010"and op_code="0010011" and (to_integer(signed(in_A))<to_integer(signed(in_imm)))) -- SLTI
-			      else X"00000001" when (op_ctrl="011"and op_code="0010011" and (to_integer(unsigned(in_A)) < to_integer(unsigned(in_imm)))) -- SLTIU
+			      else X"00000001" when (op_ctrl="011"and op_code="0010011" and (unsigned(in_A) < unsigned(in_imm))) -- SLTIU
 			      else X"00000001" when (op_ctrl="010"and op_code="0010011" and (to_integer(signed(in_A)) < to_integer(signed(in_B)))) -- SLT
-			      else X"00000001" when (op_ctrl="011"and op_code="0010011" and (to_integer(unsigned(in_A)) < to_integer(unsigned(in_B)))) -- SLTU
+			      else X"00000001" when (op_ctrl="011"and op_code="0010011" and (unsigned(in_A) < unsigned(in_B))) -- SLTU
 			      else X"00000000";
 	out_value <= out_value_internal;
 end Behavioral;
