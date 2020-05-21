@@ -19,7 +19,7 @@ architecture Behavioral of jmp_compare is
 begin
 	lt <= '1' when to_integer(signed(in_A)) < to_integer(signed(in_B))
 	      else '0';
-	ltu <= '1' when to_integer(unsigned(in_A)) < to_integer(unsigned(in_B))
+	ltu <= '1' when unsigned(in_A) < unsigned(in_B)
 	      else '0';
 	eq <= '1' when to_integer(unsigned(in_A)) = to_integer(unsigned(in_B))
 	      else '0';

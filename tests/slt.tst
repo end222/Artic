@@ -67,7 +67,7 @@ add x10, x10, x11
 # Test 8
 li x1, 0x00000000
 li x2, 0x00007FFF
-li x3, 0x00000000
+li x3, 0x00000001
 slt x4, x1, x2
 bne x3, x4, fail
 add x10, x10, x11
