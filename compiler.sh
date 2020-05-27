@@ -347,7 +347,6 @@ for i in $(cat < tmp); do
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
-
 		"andi")
 			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f4)" | bc)
 			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
@@ -386,6 +385,86 @@ for i in $(cat < tmp); do
 				dest=$(( $dest + (1 << 20)))
 			fi
 			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (1 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"beq")
+			rs1=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			# >> 1 is used because the destination has to be represented as a 
+			# multiple of 2
+			dest=$(( ($imm - $address - 4) >> 1 ))
+			if [ $dest -lt 0 ] 
+			then
+				# So as to represent negatives correctly
+				dest=$(( $dest + (1 << 20)))
+			fi
+			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (0 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"bge")
+			rs1=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			# >> 1 is used because the destination has to be represented as a 
+			# multiple of 2
+			dest=$(( ($imm - $address - 4) >> 1 ))
+			if [ $dest -lt 0 ] 
+			then
+				# So as to represent negatives correctly
+				dest=$(( $dest + (1 << 20)))
+			fi
+			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (5 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"bgeu")
+			rs1=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			# >> 1 is used because the destination has to be represented as a 
+			# multiple of 2
+			dest=$(( ($imm - $address - 4) >> 1 ))
+			if [ $dest -lt 0 ] 
+			then
+				# So as to represent negatives correctly
+				dest=$(( $dest + (1 << 20)))
+			fi
+			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (7 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"blt")
+			rs1=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			# >> 1 is used because the destination has to be represented as a 
+			# multiple of 2
+			dest=$(( ($imm - $address - 4) >> 1 ))
+			if [ $dest -lt 0 ] 
+			then
+				# So as to represent negatives correctly
+				dest=$(( $dest + (1 << 20)))
+			fi
+			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (4 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"bltu")
+			rs1=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			imm=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			# >> 1 is used because the destination has to be represented as a 
+			# multiple of 2
+			dest=$(( ($imm - $address - 4) >> 1 ))
+			if [ $dest -lt 0 ] 
+			then
+				# So as to represent negatives correctly
+				dest=$(( $dest + (1 << 20)))
+			fi
+			inst=$(( ( ( ($dest >> 11) % 2 ) << 31 ) + ( ( ( $dest >> 4 ) % ( 1 << 6 ) ) << 25 ) + ($rs2 << 20) + ($rs1 << 15) + (6 << 12) + ( ( $dest % ( 1 << 4 ) ) << 8 ) + ( ( ($dest >> 10) % 2) << 7) + 99))
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
