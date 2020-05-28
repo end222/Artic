@@ -151,6 +151,30 @@ for i in $(cat < tmp); do
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
+		"sll")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			inst=$(( ( $rs2 << 20 ) + ( $rs1 << 15 ) + ( 1 << 12 ) + ( $rd << 7 ) + 51))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"srl")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			inst=$(( ( $rs2 << 20 ) + ( $rs1 << 15 ) + ( 5 << 12 ) + ( $rd << 7 ) + 51))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"sra")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			rs2=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			inst=$(( ( 1 << 30 ) + ( $rs2 << 20 ) + ( $rs1 << 15 ) + ( 5 << 12 ) + ( $rd << 7 ) + 51))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
 		"lb")
 			# Take into account that the offset can be negative
 			negative_offset=0
@@ -209,7 +233,6 @@ for i in $(cat < tmp); do
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
-
 		"lbu")
 			# Take into account that the offset can be negative
 			negative_offset=0
@@ -267,7 +290,6 @@ for i in $(cat < tmp); do
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
-
 		"sh")
 			# Take into account that the offset can be negative
 			negative_offset=0
@@ -287,7 +309,6 @@ for i in $(cat < tmp); do
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
-
 		"sw")
 			# Take into account that the offset can be negative
 			negative_offset=0
@@ -347,12 +368,35 @@ for i in $(cat < tmp); do
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
-
 		"andi")
 			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f4)" | bc)
 			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
 			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
 			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rs1 << 15) + ( 7 << 12 ) + ($rd << 7) + 19))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"slli")
+			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f4)" | bc)
+			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rs1 << 15) + ( 1 << 12 ) + ($rd << 7) + 19))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"srli")
+			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f4)" | bc)
+			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rs1 << 15) + ( 5 << 12 ) + ($rd << 7) + 19))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"srai")
+			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f4)" | bc)
+			rs1=$(echo $i | cut -d' ' -f3 | sed "s/x//g")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			inst=$(( ( 1 << 30 ) + ( ($imm % (1 << 12) ) << 20 ) + ($rs1 << 15) + ( 5 << 12 ) + ($rd << 7) + 19))
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
