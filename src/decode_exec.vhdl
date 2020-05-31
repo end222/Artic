@@ -29,6 +29,7 @@ entity decode_exec is
 	       decode_func7 : in std_logic_vector(6 downto 0);
 	       decode_breg_WE : in std_logic;
 	       decode_next_pc : in std_logic_vector(31 downto 0);
+	       decode_pc : in std_logic_vector(31 downto 0);
 
 	       exec_rs1_value : out std_logic_vector(31 downto 0);
 	       exec_rs2_value : out std_logic_vector(31 downto 0);
@@ -46,7 +47,8 @@ entity decode_exec is
 	       exec_opcode : out std_logic_vector(6 downto 0);
 	       exec_func7 : out std_logic_vector(6 downto 0);
 	       exec_breg_WE : out std_logic;
-	       exec_next_pc : out std_logic_vector(31 downto 0));
+	       exec_next_pc : out std_logic_vector(31 downto 0);
+	       exec_pc : out std_logic_vector(31 downto 0));
 end decode_exec;
 
 
@@ -73,6 +75,7 @@ begin
 				exec_func7 <= "0000000";
 				exec_breg_WE <= '0';
 				exec_next_pc <= X"00000000";
+				exec_pc <= X"00000000";
 
 			else
 				if (in_load = '1') then
@@ -93,6 +96,7 @@ begin
 					exec_func7 <= decode_func7;
 					exec_breg_WE <= decode_breg_WE;
 					exec_next_pc <= decode_next_pc;
+					exec_pc <= decode_pc;
 				end if;
 			end if;
 		end if;

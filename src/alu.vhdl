@@ -26,6 +26,7 @@ entity ALU is
 	   in_B : in std_logic_vector (31 downto 0);
 	   in_imm : in std_logic_vector (31 downto 0);
 	   in_func7 : in std_logic_vector (6 downto 0);
+           in_pc : in std_logic_vector(31 downto 0);
 	   op_code : in std_logic_vector (6 downto 0);
 	   op_ctrl : in std_logic_vector (2 downto 0);
 	   out_value : out std_logic_vector (31 downto 0));
@@ -37,6 +38,7 @@ begin
 	out_value_internal <= in_A + in_B when (op_ctrl="000" and in_func7="0000000" and op_code="0110011") -- ADD
 			      else in_imm when (op_code="0110111") -- LUI
 			      else in_A + in_imm when (op_ctrl="000" and op_code="0010011") or (op_code="0000011") or (op_code="0100011") -- ADDI, LD & ST address
+			      else in_pc + in_imm when op_code="0010111" -- AUIPC
 			      else in_A - in_B when (op_ctrl="000" and in_func7="0100000" and op_code="0110011")  -- SUB
 			      else in_A and in_B when (op_ctrl="111" and op_code="0110011") -- AND
 			      else in_A and in_imm when (op_ctrl="111" and op_code="0010011") -- ANDI

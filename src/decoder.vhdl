@@ -37,6 +37,9 @@ begin
 			else
 				expanded_imm_internal(31 downto 12) <= "11111111111111111111";
 			end if;
+		elsif (in_inst(6 downto 0)="0010111") then -- AUIPC
+			expanded_imm_internal(31 downto 12) <= in_inst(31 downto 12);
+			expanded_imm_internal(11 downto 0) <= "000000000000";
 		elsif (in_inst(6 downto 0)="1101111") then -- JAL instructions
 			expanded_imm_internal(0) <= '0';
 			expanded_imm_internal(10 downto 1) <= in_inst(30 downto 21);

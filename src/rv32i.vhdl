@@ -12,13 +12,6 @@ entity RV32I is
 end RV32I;
 
 architecture Behavioral of RV32I is
-	component mux_2_32 is
-		Port ( in_0 : in std_logic_vector (31 downto 0);
-		       in_1 : in std_logic_vector(31 downto 0);
-		       ctrl : in std_logic;
-		       out_val : out std_logic_vector(31 downto 0));
-	end component;
-
 	-- 32 bit adder used to increase PC by 4
 	signal adder4_out : std_logic_vector(31 downto 0);
 	component adder32 is
@@ -37,7 +30,8 @@ architecture Behavioral of RV32I is
 	      );
 	end component;
 
-	signal inst_out : std_logic_vector(31 downto 0);
+	signal inst_out, system_trap_value : std_logic_vector(31 downto 0);
+	signal system_trap_WE : std_logic;
 	component memory is
 		Port ( in_clk : in std_logic;
 		       in_addr : in std_logic_vector(31 downto 0);
@@ -47,25 +41,37 @@ architecture Behavioral of RV32I is
 		       in_RE : in std_logic;
 		       in_RE2 : in std_logic;
 		       in_func3 : in std_logic_vector(2 downto 0);
+		       out_system_trap_WE : out std_logic;
+		       out_system_trap_value : out std_logic_vector(31 downto 0);
 		       out_val : out std_logic_vector(31 downto 0);
 		       out_val2 : out std_logic_vector(31 downto 0));
 	end component;
 
-	signal decode_inst_fd, decode_next_pc : std_logic_vector(31 downto 0);
+	signal system_trap_out : std_logic_vector(31 downto 0);
+	component system_trap_handler is
+		Port ( in_clk : in std_logic;
+		       in_WE : in std_logic;
+		       in_D : in std_logic_vector(31 downto 0);
+		       out_val : out std_logic_vector(31 downto 0));
+	end component;
+
+	signal decode_inst_fd, decode_next_pc, decode_pc : std_logic_vector(31 downto 0);
 	component fetch_decode is
 		Port ( in_clk : in std_logic;
 		       in_reset : in std_logic;
 		       in_load : in std_logic;
 		       fetch_inst : in std_logic_vector (31 downto 0);
+		       fetch_pc : in std_logic_vector (31 downto 0);
 		       fetch_next_pc : in std_logic_vector (31 downto 0);
 		       decode_inst : out std_logic_vector (31 downto 0);
+		       decode_pc : out std_logic_vector (31 downto 0);
 		       decode_next_pc : out std_logic_vector (31 downto 0));
 	end component;
 
 	signal decode_rs1_id, decode_rs2_id, decode_rd_id : std_logic_vector(4 downto 0);
 	signal func3 : std_logic_vector(2 downto 0);
 	signal func7, opcode : std_logic_vector(6 downto 0);
-	signal imm, jmp_address : std_logic_vector(31 downto 0);
+	signal imm, jmp_address, jalr_address : std_logic_vector(31 downto 0);
 	signal breg_WE, memread, memwrite, memtoreg : std_logic; -- Write enable for bank register
 
 	-- Splits the instruction and tells which components will need to be activated
@@ -102,7 +108,7 @@ architecture Behavioral of RV32I is
 	signal exec_rst_inuse, exec_fp_add, exec_memwrite, exec_memread, exec_memtoreg, exec_alu_src, exec_breg_WE : std_logic;
 	signal exec_alu_opctrl : std_logic_vector(2 downto 0);
 	signal exec_opcode, exec_func7 : std_logic_vector(6 downto 0);
-	signal exec_imm, exec_next_pc : std_logic_vector(31 downto 0);
+	signal exec_imm, exec_next_pc, exec_pc : std_logic_vector(31 downto 0);
 	
 	component decode_exec is
 		Port ( in_clk : in std_logic;
@@ -126,6 +132,7 @@ architecture Behavioral of RV32I is
 		       decode_func7 : in std_logic_vector(6 downto 0);
 		       decode_breg_WE : in std_logic;
 		       decode_next_pc : in std_logic_vector(31 downto 0);
+		       decode_pc : in std_logic_vector(31 downto 0);
 
 		       exec_rs1_value : out std_logic_vector(31 downto 0);
 		       exec_rs2_value : out std_logic_vector(31 downto 0);
@@ -143,7 +150,8 @@ architecture Behavioral of RV32I is
 		       exec_opcode : out std_logic_vector(6 downto 0);
 		       exec_func7 : out std_logic_vector(6 downto 0);
 		       exec_breg_WE : out std_logic;
-		       exec_next_pc : out std_logic_vector(31 downto 0));
+		       exec_next_pc : out std_logic_vector(31 downto 0);
+		       exec_pc : out std_logic_vector(31 downto 0));
 	end component;
 
 	signal exec_alu_out_value : std_logic_vector(31 downto 0);
@@ -153,6 +161,7 @@ architecture Behavioral of RV32I is
 		       in_B : in std_logic_vector(31 downto 0);
 		       in_imm : in std_logic_vector (31 downto 0);
 		       in_func7 : in std_logic_vector (6 downto 0);
+		       in_pc : in std_logic_vector(31 downto 0);
 		       op_code : in std_logic_vector (6 downto 0);
 		       op_ctrl : in std_logic_vector (2 downto 0);
 		       out_value : out std_logic_vector(31 downto 0));
@@ -259,14 +268,14 @@ architecture Behavioral of RV32I is
 
 	signal load_PC, load_fd, load_de, reset_de : std_logic;
 
-	signal jmp_mux_ctrl : std_logic;
+	signal jmp_mux_ctrl : std_logic_vector(1 downto 0);
 	component jmp_control is
 		Port ( in_opcode : in std_logic_vector (6 downto 0);
 		       in_func3 : in std_logic_vector(2 downto 0);
 		       eq : in std_logic;
 		       lt : in std_logic;
 		       ltu : in std_logic;
-		       out_jmp_mux_ctrl : out std_logic);
+		       out_jmp_mux_ctrl : out std_logic_vector(1 downto 0));
 	end component;
 
 	signal eq, lt, ltu : std_logic;
@@ -293,10 +302,12 @@ begin
 			      in_W => load_PC,
 			      out_val => PC_out);
 
-	pc_mux : mux_2_32 port map ( in_0 => adder4_out,
+	pc_mux : mux_4_32 port map ( in_0 => adder4_out,
 				     in_1 => jmp_address,
-				     ctrl => jmp_mux_ctrl,
-				     out_val => PC_in);
+				     in_2 => jalr_address,
+				     in_3 => system_trap_out,
+				     in_ctrl => jmp_mux_ctrl,
+				     out_value => PC_in);
 
 	adder4 : adder32 port map ( in_0 => PC_out,
 				    in_1 => "00000000000000000000000000000100",
@@ -306,6 +317,10 @@ begin
 				      in_1 => imm,
 				      out_val => jmp_address);
 
+	adder_jalr : adder32 port map ( in_0 => decode_rs1_value,
+				      in_1 => imm,
+				      out_val => jalr_address);
+
 	mem : memory port map ( in_clk => clk,
 					  in_addr => PC_out,
 					  in_addr2 => memory_alu_out_value,
@@ -314,16 +329,20 @@ begin
 					  in_RE => '1',
 					  in_RE2 => memory_memread,
 					  in_func3 => memory_func3,
+					  out_system_trap_WE => system_trap_WE,
+					  out_system_trap_value => system_trap_value,
 					  out_val => inst_out,
 					  out_val2 => memory_mem_out_value);
 
 	fd_reg : fetch_decode port map ( in_clk => clk,
 					 -- Reset when a jump occurs so as to avoid executing PC+4
-					 in_reset => jmp_mux_ctrl and load_fd,
-					 in_load => load_fd and not jmp_mux_ctrl,
+					 in_reset => (jmp_mux_ctrl(1) or jmp_mux_ctrl(0)) and load_fd,
+					 in_load => load_fd and not jmp_mux_ctrl(1) and not jmp_mux_ctrl(0),
 					 fetch_inst => inst_out,
+					 fetch_pc => PC_out,
 					 fetch_next_pc => adder4_out,
 					 decode_inst => decode_inst_fd,
+					 decode_pc => decode_pc,
 					 decode_next_pc => decode_next_pc);
 
 	deco : decoder port map ( in_inst => decode_inst_fd,
@@ -372,6 +391,7 @@ begin
 		       -- PC+4 has to be stored in rd.
 		       decode_breg_WE => breg_WE,
 		       decode_next_pc => decode_next_pc,
+		       decode_pc => decode_pc,
 
 		       exec_rs1_value => exec_rs1_value,
 		       exec_rs2_value => exec_rs2_value,
@@ -389,6 +409,7 @@ begin
 		       exec_opcode => exec_opcode,
 		       exec_func7 => exec_func7,
 		       exec_breg_WE => exec_breg_WE,
+		       exec_pc => exec_pc,
 		       exec_next_pc => exec_next_pc);
 
 	alu_int : ALU port map ( in_clk => clk,
@@ -396,6 +417,7 @@ begin
 				 in_B => mux4_out_2,
 				 in_imm => exec_imm,
 				 in_func7 => exec_func7,
+				 in_pc => exec_pc,
 				 op_ctrl => exec_alu_opctrl,
 				 op_code => exec_opcode,
 				 out_value => exec_alu_out_value);
@@ -493,4 +515,8 @@ begin
 					  eq => eq,
 					  lt => lt,
 					  ltu => ltu);
+	thandler : system_trap_handler port map ( in_clk => clk,
+		       in_WE => system_trap_WE,
+		       in_D => system_trap_value,
+		       out_val => system_trap_out);
 end Behavioral;

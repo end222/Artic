@@ -42,8 +42,8 @@ add x10, x10, x11
 
 # Test 5
 li x1, 0x21212121
-li x2, 0x10909090
-li x3, 0xFFFFFFC1
+li x2, 0xFFFFFFC1
+li x3, 0x10909090
 srl x4, x1, x2
 bne x3, x4, fail
 add x10, x10, x11
