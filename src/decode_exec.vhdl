@@ -30,6 +30,7 @@ entity decode_exec is
 	       decode_breg_WE : in std_logic;
 	       decode_next_pc : in std_logic_vector(31 downto 0);
 	       decode_pc : in std_logic_vector(31 downto 0);
+	       exception : in std_logic_vector(1 downto 0);
 
 	       exec_rs1_value : out std_logic_vector(31 downto 0);
 	       exec_rs2_value : out std_logic_vector(31 downto 0);
@@ -88,13 +89,21 @@ begin
 					exec_rst_inuse <= decode_rst_inuse;
 					exec_fp_add <= decode_fp_add;
 					exec_alu_opctrl <= decode_alu_opctrl;
-					exec_memwrite <= decode_memwrite;
+					if (exception = "00") then
+						exec_memwrite <= decode_memwrite;
+					else
+						exec_memwrite <= '0';
+					end if;
 					exec_memread <= decode_memread;
 					exec_memtoreg <= decode_memtoreg;
 					exec_alu_src <= decode_alu_src;
 					exec_opcode <= decode_opcode;
 					exec_func7 <= decode_func7;
-					exec_breg_WE <= decode_breg_WE;
+					if (exception = "00") then
+						exec_breg_WE <= decode_breg_WE;
+					else
+						exec_breg_WE <= '0';
+					end if;
 					exec_next_pc <= decode_next_pc;
 					exec_pc <= decode_pc;
 				end if;

@@ -30,7 +30,7 @@ architecture Behavioral of RV32I is
 	      );
 	end component;
 
-	signal inst_out, system_trap_value : std_logic_vector(31 downto 0);
+	signal inst_out, system_trap_value, system_exception_value : std_logic_vector(31 downto 0);
 	signal system_trap_WE : std_logic;
 	component memory is
 		Port ( in_clk : in std_logic;
@@ -43,15 +43,25 @@ architecture Behavioral of RV32I is
 		       in_func3 : in std_logic_vector(2 downto 0);
 		       out_system_trap_WE : out std_logic;
 		       out_system_trap_value : out std_logic_vector(31 downto 0);
+		       out_system_exception_value : out std_logic_vector(31 downto 0);
 		       out_val : out std_logic_vector(31 downto 0);
 		       out_val2 : out std_logic_vector(31 downto 0));
 	end component;
 
-	signal system_trap_out : std_logic_vector(31 downto 0);
-	component system_trap_handler is
+	component exception_detect is
+		Port ( in_opcode : in  std_logic_vector (6 downto 0);
+		       in_rs1_value : in std_logic_vector(31 downto 0);
+		       func3 : in std_logic_vector(2 downto 0);
+		       imm : in std_logic_vector(31 downto 0);
+		       exception : out  std_logic_vector (1 downto 0));
+	end component;
+	signal system_out : std_logic_vector(31 downto 0);
+	component system_handler is
 		Port ( in_clk : in std_logic;
 		       in_WE : in std_logic;
 		       in_D : in std_logic_vector(31 downto 0);
+		       in_De : in std_logic_vector(31 downto 0);
+		       exception : in std_logic_vector(1 downto 0);
 		       out_val : out std_logic_vector(31 downto 0));
 	end component;
 
@@ -133,6 +143,7 @@ architecture Behavioral of RV32I is
 		       decode_breg_WE : in std_logic;
 		       decode_next_pc : in std_logic_vector(31 downto 0);
 		       decode_pc : in std_logic_vector(31 downto 0);
+		       exception : in std_logic_vector(1 downto 0);
 
 		       exec_rs1_value : out std_logic_vector(31 downto 0);
 		       exec_rs2_value : out std_logic_vector(31 downto 0);
@@ -254,12 +265,16 @@ architecture Behavioral of RV32I is
 	end component;
 
 	signal stop_decode : std_logic;
+	signal exception : std_logic_vector(1 downto 0);
 	component risk_detection_unit is
 		Port ( decode_rs1_id : in std_logic_vector(4 downto 0);
 		       decode_rs2_id : in std_logic_vector(4 downto 0);
 		       exec_rd_id : in std_logic_vector(4 downto 0);
 		       exec_memread : in std_logic;
 		       exec_breg_WE : in std_logic;
+		       exec_memwrite : in std_logic;
+		       memory_memwrite : in std_logic;
+		       exception : in std_logic_vector(1 downto 0);
 		       memory_rd_id : in std_logic_vector(4 downto 0);
 		       memory_breg_WE : in std_logic;
 		       decode_opcode : in std_logic_vector(6 downto 0);
@@ -275,6 +290,7 @@ architecture Behavioral of RV32I is
 		       eq : in std_logic;
 		       lt : in std_logic;
 		       ltu : in std_logic;
+		       exception : in std_logic_vector(1 downto 0);
 		       out_jmp_mux_ctrl : out std_logic_vector(1 downto 0));
 	end component;
 
@@ -305,7 +321,7 @@ begin
 	pc_mux : mux_4_32 port map ( in_0 => adder4_out,
 				     in_1 => jmp_address,
 				     in_2 => jalr_address,
-				     in_3 => system_trap_out,
+				     in_3 => system_out,
 				     in_ctrl => jmp_mux_ctrl,
 				     out_value => PC_in);
 
@@ -331,6 +347,7 @@ begin
 					  in_func3 => memory_func3,
 					  out_system_trap_WE => system_trap_WE,
 					  out_system_trap_value => system_trap_value,
+					  out_system_exception_value => system_exception_value,
 					  out_val => inst_out,
 					  out_val2 => memory_mem_out_value);
 
@@ -392,6 +409,7 @@ begin
 		       decode_breg_WE => breg_WE,
 		       decode_next_pc => decode_next_pc,
 		       decode_pc => decode_pc,
+		       exception => exception,
 
 		       exec_rs1_value => exec_rs1_value,
 		       exec_rs2_value => exec_rs2_value,
@@ -496,11 +514,14 @@ begin
 	rd_unit : risk_detection_unit port map ( decode_rs1_id => decode_rs1_id,
 		       decode_rs2_id => decode_rs2_id,
 		       exec_memread => exec_memread,
-		       exec_rd_id => exec_rd_id,
 		       exec_breg_WE => exec_breg_WE,
+		       exec_memwrite => exec_memwrite,
+		       memory_memwrite => memory_memwrite,
+		       exception => exception,
+		       exec_rd_id => exec_rd_id,
 		       memory_rd_id => memory_rd_id,
 		       memory_breg_WE => memory_breg_WE,
-	       	       decode_opcode => opcode,
+		       decode_opcode => opcode,
 		       stop_decode => stop_decode);
 
 	jmp_con : jmp_control port map ( in_opcode => opcode,
@@ -508,6 +529,7 @@ begin
 					 eq => eq,
 					 lt => lt,
 					 ltu => ltu,
+					 exception => exception,
 					 out_jmp_mux_ctrl => jmp_mux_ctrl);
 
 	jmp_comp : jmp_compare port map ( in_A => decode_rs1_value,
@@ -515,8 +537,15 @@ begin
 					  eq => eq,
 					  lt => lt,
 					  ltu => ltu);
-	thandler : system_trap_handler port map ( in_clk => clk,
-		       in_WE => system_trap_WE,
-		       in_D => system_trap_value,
-		       out_val => system_trap_out);
+	thandler : system_handler port map ( in_clk => clk,
+					     in_WE => system_trap_WE,
+					     in_D => system_trap_value,
+					     in_De => system_exception_value,
+					     exception => exception,
+					     out_val => system_out);
+	except : exception_detect port map ( in_opcode => opcode,
+		       in_rs1_value => decode_rs1_value,
+		       func3 => func3,
+		       imm => imm, 
+		       exception => exception);
 end Behavioral;

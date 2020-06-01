@@ -513,6 +513,11 @@ for i in $(cat < tmp); do
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
+		"system")
+			inst=$((115))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
 		".word")
 			echo $i | cut -d' ' -f2 | cut -d'x' -f2 >> tmp2
 			address=$(( $address+4 ))

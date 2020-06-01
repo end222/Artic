@@ -12,6 +12,7 @@ entity jmp_control is
 	       eq : in std_logic;
 	       lt : in std_logic;
 	       ltu : in std_logic;
+	       exception : in std_logic_vector(1 downto 0);
 	       out_jmp_mux_ctrl : out std_logic_vector(1 downto 0));
 end jmp_control;
 
@@ -25,6 +26,6 @@ begin
 			    else "01" when in_opcode="1100011" and in_func3="110" and ltu='1' -- BLTU instruction
 			    else "01" when in_opcode="1100011" and in_func3="111" and ltu='0' -- BGEU instruction
 			    else "10" when in_opcode="1100111" -- JALR instruction
-			    else "11" when in_opcode="1110011" -- SYSTEM instruction
+			    else "11" when not (exception = "00") -- SYSTEM instruction or exception
 			    else "00";
 end Behavioral;
