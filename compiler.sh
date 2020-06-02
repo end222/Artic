@@ -74,6 +74,20 @@ address=0
 for i in $(cat < tmp); do
 	opcode=$(echo $i | cut -d' ' -f1)
 	case "$opcode" in
+		"lui")
+			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f3)" | bc)
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			inst=$(( ($imm << 12) + ( $rd << 7 ) + 55))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"auipc")
+			imm=$(echo "ibase=16; $(echo $i | cut -d' ' -f3)" | bc)
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+			inst=$(( ($imm << 12) + ( $rd << 7 ) + 23))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
 		"la")
 			# LUI
 			imm=$(echo $i | cut -d' ' -f3)
@@ -414,6 +428,15 @@ for i in $(cat < tmp); do
 			fi
 
 			inst=$(( ( ( ($dest >> 19) % 2) << 31 ) + ( ( $dest % ( 1 << 10 ) ) << 21 ) + ( ( ( $dest >> 9 ) % 2 ) << 20 ) + ( ( ( $dest >> 10 ) % ( 1 << 8 ) ) << 12 ) + ( $rd << 7 ) + 111 ))
+			echo "obase=16; $inst" | bc >> tmp2
+			address=$(( $address+4 ))
+			;;
+		"jalr")
+			imm=$(echo $i | cut -d' ' -f3)
+			rs1=$(echo $i | cut -d' ' -f4 | sed "s/x//g")
+			rd=$(echo $i | cut -d' ' -f2 | sed "s/x//g")
+
+			inst=$(( ( ($imm % (1 << 12) ) << 20 ) + ($rs1 << 15) + ($rd << 7) + 103))
 			echo "obase=16; $inst" | bc >> tmp2
 			address=$(( $address+4 ))
 			;;
