@@ -28,7 +28,6 @@ architecture Behavioral of decoder is
 begin
 	decode : process(in_inst)
 	begin
-		-- TODO: Take into account more cases
 		if (in_inst(6 downto 0)="0100011") then -- ST instructions
 			expanded_imm_internal(11 downto 5) <= in_inst(31 downto 25);
 			expanded_imm_internal(4 downto 0) <= in_inst(11 downto 7);
